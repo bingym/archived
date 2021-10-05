@@ -2,6 +2,7 @@
 
 - 饭否
   - `gzallen.csv` 张小龙
+  - `wangxing.txt` 王兴(饭否已清空，从woshipm.com上找到了些)
 
 - 知乎
   - `lishenshen.csv` 李申申
