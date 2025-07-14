@@ -40,6 +40,11 @@ func readCSVFile(path string) ([][]string, error) {
 	return [][]string{}, nil
 }
 
+type Book struct {
+	Title string `json:"title"`
+	Url   string `json:"url"`
+	Cover string `json:"cover"`
+}
 type Article struct {
 	Title   string `json:"title"`
 	Content string `json:"content"`
@@ -62,6 +67,7 @@ type Person struct {
 	Articles    []*Article `json:"articles"`
 	Twitter     []*Twitter `json:"twitter"`
 	Videos      []*Video   `json:"videos"`
+	Books       []*Book    `json:"books"`
 }
 
 type PersonInfo struct {
@@ -107,10 +113,28 @@ func init() {
 				}
 			}
 		}
-		// 4. 读取articles.json
-		articlesPath := filepath.Join(personDir, "articles.json")
+		// 4. 读取articles目录下的所有md文件
+		articlesDir := filepath.Join(personDir, "articles")
 		articles := []*Article{}
-		_ = readJSONFile(articlesPath, &articles)
+		if stat, err := os.Stat(articlesDir); err == nil && stat.IsDir() {
+			files, _ := ioutil.ReadDir(articlesDir)
+			for _, file := range files {
+				if !file.IsDir() && filepath.Ext(file.Name()) == ".md" {
+					mdPath := filepath.Join(articlesDir, file.Name())
+					content, err := os.ReadFile(mdPath)
+					if err == nil {
+						articles = append(articles, &Article{
+							Title:   file.Name(),
+							Content: string(content),
+						})
+					}
+				}
+			}
+		}
+		// 5. 读取books.json
+		booksPath := filepath.Join(personDir, "books.json")
+		books := []*Book{}
+		_ = readJSONFile(booksPath, &books)
 		// 5. 构建Person对象
 		p := Person{
 			Name:     info.Name,
@@ -118,6 +142,7 @@ func init() {
 			Articles: articles,
 			Twitter:  twitters,
 			Videos:   videos,
+			Books:    books,
 		}
 		PersonInfoList = append(PersonInfoList, &PersonInfo{
 			Id:     info.Id,
