@@ -1,0 +1,90 @@
+@import "tailwindcss";
+@plugin "daisyui";
+
+.main-center-wrapper {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f2f2f2;
+}
+
+.container {
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 24px;
+  background: #f2f2f2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  box-sizing: border-box;
+}
+.row {
+  display: flex;
+  margin-bottom: 32px;
+  justify-content: center;
+  width: 100%;
+}
+.card {
+  flex: 1;
+  margin: 0 16px;
+  padding: 32px 0 24px 0;
+  border: none;
+  border-radius: 0;
+  text-align: center;
+  background: #0078d7;
+  color: #fff;
+  box-shadow: none;
+  transition: background 0.2s;
+  font-weight: bold;
+  font-size: 20px;
+  letter-spacing: 1px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+.card:hover {
+  background: #005fa1;
+}
+.avatar {
+  width: 96px;
+  height: 96px;
+  border-radius: 0;
+  object-fit: cover;
+  margin-bottom: 18px;
+  background: #fff;
+  border: 4px solid #fff;
+  box-sizing: border-box;
+}
+.avatar.placeholder {
+  background: #ccc;
+  border: 4px solid #fff;
+}
+.name {
+  font-size: 22px;
+  font-weight: bold;
+  margin-top: 8px;
+  color: #fff;
+  letter-spacing: 1px;
+}
+h1 {
+  font-size: 40px;
+  font-weight: 900;
+  color: #0078d7;
+  margin-bottom: 36px;
+  letter-spacing: 2px;
+  text-align: left;
+}
+@media (max-width: 700px) {
+  .row {
+    flex-direction: column;
+  }
+  .card {
+    margin: 16px 0;
+  }
+  .container {
+    padding: 8px;
+  }
+}
