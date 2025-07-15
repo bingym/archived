@@ -1,9 +1,11 @@
 package main
 
 import (
+	"embed"
 	"encoding/csv"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -12,9 +14,22 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+//go:embed data/*
+var embeddedData embed.FS
+
+// 兼容本地和embed的读取函数
+func ReadDataFile(path string) ([]byte, error) {
+	return embeddedData.ReadFile(path)
+}
+
+// 兼容本地和embed的打开文件函数（返回io.ReadCloser）
+func OpenDataFile(path string) (io.ReadCloser, error) {
+	return embeddedData.Open(path)
+}
+
 // 读取JSON文件并解析到v
 func readJSONFile(path string, v interface{}) error {
-	data, err := os.ReadFile(path)
+	data, err := ReadDataFile(path)
 	if err != nil {
 		return err
 	}
@@ -23,7 +38,7 @@ func readJSONFile(path string, v interface{}) error {
 
 // 读取CSV文件，返回所有行（去除表头）
 func readCSVFile(path string) ([][]string, error) {
-	f, err := os.Open(path)
+	f, err := OpenDataFile(path)
 	if err != nil {
 		return nil, err
 	}
@@ -60,6 +75,12 @@ type Video struct {
 	Url   string `json:"url"`
 }
 
+type Answer struct {
+	Datetime string `json:"datetime"`
+	Question string `json:"question"`
+	Content  string `json:"content"`
+}
+
 type Person struct {
 	Name        string     `json:"name"`
 	Avatar      string     `json:"avatar"`
@@ -68,12 +89,14 @@ type Person struct {
 	Twitter     []*Twitter `json:"twitter"`
 	Videos      []*Video   `json:"videos"`
 	Books       []*Book    `json:"books"`
+	Answers     []*Answer  `json:"answers"`
 }
 
 type PersonInfo struct {
-	Id     string `json:"id"`
-	Name   string `json:"name"`
-	Avatar string `json:"avatar"`
+	Id          string `json:"id"`
+	Name        string `json:"name"`
+	Avatar      string `json:"avatar"`
+	Description string `json:"description"`
 }
 
 var PersonInfoList = []*PersonInfo{}
@@ -135,19 +158,37 @@ func init() {
 		booksPath := filepath.Join(personDir, "books.json")
 		books := []*Book{}
 		_ = readJSONFile(booksPath, &books)
+		// 6. 读取answers.csv
+		answersPath := filepath.Join(personDir, "answers.csv")
+		answers := []*Answer{}
+		if _, err := os.Stat(answersPath); err == nil {
+			rows, _ := readCSVFile(answersPath)
+			for _, row := range rows {
+				if len(row) >= 3 {
+					answers = append(answers, &Answer{
+						Datetime: row[0],
+						Question: row[1],
+						Content:  row[2],
+					})
+				}
+			}
+		}
 		// 5. 构建Person对象
 		p := Person{
-			Name:     info.Name,
-			Avatar:   info.Avatar,
-			Articles: articles,
-			Twitter:  twitters,
-			Videos:   videos,
-			Books:    books,
+			Name:        info.Name,
+			Avatar:      info.Avatar,
+			Description: info.Description,
+			Articles:    articles,
+			Twitter:     twitters,
+			Videos:      videos,
+			Books:       books,
+			Answers:     answers,
 		}
 		PersonInfoList = append(PersonInfoList, &PersonInfo{
-			Id:     info.Id,
-			Name:   info.Name,
-			Avatar: info.Avatar,
+			Id:          info.Id,
+			Name:        info.Name,
+			Avatar:      info.Avatar,
+			Description: info.Description,
 		})
 		PersonMap[info.Id] = &p
 	}

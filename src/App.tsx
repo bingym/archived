@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { BrowserRouter as Router, Routes, Route, Link, Navigate } from "react-router-dom";
 import "./App.css";
 import PersonDetail from "./PersonDetail";
@@ -7,6 +7,7 @@ interface PersonInfo {
   id: string;
   name: string;
   avatar: string;
+  description: string;
 }
 
 function PeopleList() {
@@ -18,39 +19,38 @@ function PeopleList() {
       .then((data) => setPeople(data));
   }, []);
 
-  // 每行4个分组
-  const rows = [];
-  for (let i = 0; i < people.length; i += 4) {
-    rows.push(people.slice(i, i + 4));
-  }
-
   return (
-    <div className="main-center-wrapper">
-      <div className="container">
-        <h1>People</h1>
-        {rows.map((row, rowIdx) => (
-          <div className="row" key={rowIdx}>
-            {row.map((person, colIdx) => (
-              <Link
-                to={`/people/${person.id}`}
-                className="card"
-                key={`${person.name}-${rowIdx}-${colIdx}`}
-                style={{ textDecoration: "none" }}
-              >
+    <div className="main-center-wrapper w-full justify-center">
+      <div className="w-1/2 mx-auto mt-8 px-4">
+        <h1 className="text-2xl font-bold mb-6">People</h1>
+        <ul className="w-full mx-auto divide-y divide-gray-200 bg-base-100 rounded-box shadow">
+          {people.map((person) => (
+            <li key={person.id} className="flex items-center py-4 px-2">
+              {/* 左侧：头像、名字、描述 */}
+              <div className="flex-1 flex items-center gap-4">
                 {person.avatar ? (
                   <img
                     src={person.avatar}
                     alt={person.name}
-                    className="avatar"
+                    className="w-14 h-14 rounded-full object-cover border border-base-200"
                   />
                 ) : (
-                  <div className="avatar placeholder" />
+                  <div className="w-14 h-14 rounded-full bg-base-200" />
                 )}
-                <div className="name">{person.name}</div>
-              </Link>
-            ))}
-          </div>
-        ))}
+                <div>
+                  <div className="font-semibold text-lg">{person.name}</div>
+                  <div className="text-sm text-gray-500 line-clamp-2 max-w-xs">{person.description}</div>
+                </div>
+              </div>
+              {/* 右侧：操作栏 */}
+              <div className="ml-4">
+                <Link to={`/people/${person.id}`} className="btn btn-primary btn-sm">
+                  Go
+                </Link>
+              </div>
+            </li>
+          ))}
+        </ul>
       </div>
     </div>
   );
