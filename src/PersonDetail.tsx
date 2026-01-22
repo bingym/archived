@@ -37,7 +37,7 @@ export default function PersonDetail() {
     ...(person.books && person.books.length > 0 ? [{ key: "books", label: "Books" }] : []),
     ...(person.articles && person.articles.length > 0 ? [{ key: "articles", label: "Articles" }] : []),
     ...(person.videos && person.videos.length > 0 ? [{ key: "videos", label: "Videos" }] : []),
-    ...(person.twitter && person.twitter.length > 0 ? [{ key: "twitter", label: "Twitter" }] : []),
+    ...(person.twitter && person.twitter.length > 0 ? [{ key: "twitter", label: "Tweets" }] : []),
     ...(person.answers && person.answers.length > 0 ? [{ key: "answers", label: "Answer" }] : []),
   ];
 

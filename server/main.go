@@ -70,6 +70,11 @@ type Twitter struct {
 	Content  string `json:"content"`
 }
 
+type Podcast struct {
+	Title string `json:"title"`
+	Url   string `json:"url"`
+}
+
 type Video struct {
 	Title string `json:"title"`
 	Url   string `json:"url"`
@@ -218,5 +223,5 @@ func main() {
 		}
 		c.JSON(200, person)
 	})
-	engine.Run(":8080")
+	engine.Run(":8088")
 }
