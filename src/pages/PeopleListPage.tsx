@@ -1,12 +1,10 @@
-import { lazy, Suspense, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Avatar, Button, Card, Divider, Empty, Flex, Modal, Typography, theme } from "antd";
+import { Avatar, Button, Card, Divider, Empty, Flex, Modal, Spin, Typography, theme } from "antd";
 import { DeleteOutlined, EditOutlined, PlusOutlined, RightOutlined, UserOutlined } from "@ant-design/icons";
-import type { PersonForm } from "../components/PersonEditor";
+import PersonEditor, { type PersonForm } from "../components/PersonEditor";
 import { apiFetch, useIsAuthed } from "../auth";
 import { resolveImg } from "../lib/img";
-
-const PersonEditor = lazy(() => import("../components/PersonEditor"));
 
 const { Title, Text } = Typography;
 
@@ -21,17 +19,20 @@ export default function PeopleListPage() {
   const { token } = theme.useToken();
   const authed = useIsAuthed();
   const [people, setPeople] = useState<PersonInfo[]>([]);
+  const [listLoading, setListLoading] = useState(true);
   const [editor, setEditor] = useState<{ mode: "create" | "edit"; initial?: PersonInfo } | null>(null);
 
-  const reload = () => {
+  const reload = useCallback(() => {
+    setListLoading(true);
     apiFetch<PersonInfo[]>("/api/v1/people")
       .then(setPeople)
-      .catch(() => setPeople([]));
-  };
+      .catch(() => setPeople([]))
+      .finally(() => setListLoading(false));
+  }, []);
 
   useEffect(() => {
     reload();
-  }, []);
+  }, [reload]);
 
   const onDelete = (p: PersonInfo) => {
     Modal.confirm({
@@ -72,7 +73,12 @@ export default function PeopleListPage() {
         )}
       </Flex>
       <Card styles={{ body: { padding: 0 } }}>
-        {people.length === 0 ? (
+        {listLoading ? (
+          <Flex vertical justify="center" align="center" gap="small" style={{ minHeight: 240, padding: token.paddingXL }}>
+            <Spin size="large" />
+            <Text type="secondary">Loading...</Text>
+          </Flex>
+        ) : people.length === 0 ? (
           <Empty style={{ padding: token.paddingXL }} description="暂无数据" image={Empty.PRESENTED_IMAGE_SIMPLE} />
         ) : (
           people.map((person, index) => (
@@ -111,17 +117,15 @@ export default function PeopleListPage() {
         )}
       </Card>
       {editor && (
-        <Suspense fallback={null}>
-          <PersonEditor
-            mode={editor.mode}
-            initial={editor.initial as PersonForm | undefined}
-            onClose={() => setEditor(null)}
-            onSaved={() => {
-              setEditor(null);
-              reload();
-            }}
-          />
-        </Suspense>
+        <PersonEditor
+          mode={editor.mode}
+          initial={editor.initial as PersonForm | undefined}
+          onClose={() => setEditor(null)}
+          onSaved={() => {
+            setEditor(null);
+            reload();
+          }}
+        />
       )}
     </div>
   );

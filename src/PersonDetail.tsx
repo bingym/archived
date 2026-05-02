@@ -1,9 +1,10 @@
-import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from "react";
-import { Navigate, useNavigate, useParams, useSearchParams } from "react-router-dom";
-import { Button, Flex, Modal, Spin, Tabs, Typography, theme } from "antd";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Link, Navigate, useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { Button, Flex, Modal, Result, Spin, Tabs, Typography, theme } from "antd";
 import { PlusOutlined } from "@ant-design/icons";
 import { apiFetch, useIsAuthed } from "./auth";
-import type { ItemKind } from "./components/ItemEditor";
+import ItemEditor, { type ItemKind } from "./components/ItemEditor";
+import PersonEditor from "./components/PersonEditor";
 import { PAGE_SIZE, TAB_TO_KIND, tabToItemsKind } from "./person-detail/constants";
 import { buildPersonDetailPath, parsePersonDetailPage, parsePersonDetailTabParam } from "./person-detail/personDetailUrl";
 import PersonDetailHeader from "./person-detail/PersonDetailHeader";
@@ -24,9 +25,6 @@ import type {
   TweetItem,
   VideoItem,
 } from "./person-detail/types";
-
-const ItemEditor = lazy(() => import("./components/ItemEditor"));
-const PersonEditor = lazy(() => import("./components/PersonEditor"));
 
 const { Text } = Typography;
 
@@ -52,19 +50,37 @@ export default function PersonDetail() {
   const pageFromUrl = parsePersonDetailPage(searchParams);
   const page = tabParsed === null || tabParsed === "info" ? 1 : pageFromUrl;
 
-  const fetchPerson = useCallback(async () => {
+  const refreshPerson = useCallback(async () => {
     if (!id) return;
     try {
       const p = await apiFetch<PersonSummary>(`/api/v1/people/${id}`);
       setPerson(p);
     } catch {
-      setPerson(null);
+      /* 后台刷新失败时保留当前展示，避免整页被清空 */
     }
   }, [id]);
 
+  const [personBootstrap, setPersonBootstrap] = useState(true);
+
   useEffect(() => {
-    void fetchPerson();
-  }, [fetchPerson]);
+    if (!id) return;
+    let cancelled = false;
+    setPersonBootstrap(true);
+    setPerson(null);
+    (async () => {
+      try {
+        const p = await apiFetch<PersonSummary>(`/api/v1/people/${id}`);
+        if (!cancelled) setPerson(p);
+      } catch {
+        if (!cancelled) setPerson(null);
+      } finally {
+        if (!cancelled) setPersonBootstrap(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [id]);
 
   useEffect(() => {
     if (!id || tabParsed === null) {
@@ -106,9 +122,9 @@ export default function PersonDetail() {
   }, [id, tabParsed, page, listNonce]);
 
   const reloadPersonAndList = useCallback(async () => {
-    await fetchPerson();
+    await refreshPerson();
     setListNonce((n) => n + 1);
-  }, [fetchPerson]);
+  }, [refreshPerson]);
 
   const dynamicTabList: { key: TabKey; label: string; count: number }[] = useMemo(() => {
     if (!person) return [{ key: "info", label: "Info", count: 0 }];
@@ -175,11 +191,29 @@ export default function PersonDetail() {
 
   const tab = tabParsed;
 
+  if (personBootstrap) {
+    return (
+      <Flex vertical justify="center" align="center" gap="small" style={{ minHeight: 320 }}>
+        <Spin size="large" />
+        <Text type="secondary">加载中…</Text>
+      </Flex>
+    );
+  }
+
   if (!person) {
     return (
-      <Flex justify="center" align="center" style={{ minHeight: 320 }}>
-        <Spin size="large" description="Loading..." />
-      </Flex>
+      <div style={{ maxWidth: 1200, margin: "0 auto", paddingTop: 48 }}>
+        <Result
+          status="error"
+          title="人物加载失败"
+          subTitle="请检查网络或链接是否正确。"
+          extra={
+            <Link to="/people">
+              <Button type="primary">返回人物列表</Button>
+            </Link>
+          }
+        />
+      </div>
     );
   }
 
@@ -221,7 +255,7 @@ export default function PersonDetail() {
   const tweets = tab === "twitter" ? (tabItems as TweetItem[]) : [];
   const answers = tab === "answers" ? (tabItems as AnswerItem[]) : [];
 
-  const showTabSpinner = tab !== "info" && tabLoading;
+  const showTabLoading = tab !== "info" && tabLoading;
 
   const paginationProps = { page, setPage: goPage, total: tabTotal, pageSize: PAGE_SIZE };
 
@@ -244,14 +278,14 @@ export default function PersonDetail() {
       )}
 
       <div>
-        {showTabSpinner && (
-          <Flex align="center" gap="small" style={{ marginBottom: token.marginMD }}>
-            <Spin size="small" />
+        {tab === "info" && <PersonInfoTab person={person} />}
+
+        {showTabLoading && (
+          <Flex align="center" gap="small" style={{ marginBottom: token.marginMD, minHeight: 120 }}>
+            <Spin />
             <Text type="secondary">加载中…</Text>
           </Flex>
         )}
-
-        {tab === "info" && <PersonInfoTab person={person} />}
 
         {tab === "books" && !tabLoading && (
           <PersonBooksTab
@@ -315,31 +349,27 @@ export default function PersonDetail() {
       </div>
 
       {editor && id && (
-        <Suspense fallback={null}>
-          <ItemEditor
-            kind={editor.kind}
-            personId={id}
-            initial={editor.initial}
-            onClose={() => setEditor(null)}
-            onSaved={() => {
-              setEditor(null);
-              void reloadPersonAndList();
-            }}
-          />
-        </Suspense>
+        <ItemEditor
+          kind={editor.kind}
+          personId={id}
+          initial={editor.initial}
+          onClose={() => setEditor(null)}
+          onSaved={() => {
+            setEditor(null);
+            void reloadPersonAndList();
+          }}
+        />
       )}
       {personEditorOpen && (
-        <Suspense fallback={null}>
-          <PersonEditor
-            mode="edit"
-            initial={person}
-            onClose={() => setPersonEditorOpen(false)}
-            onSaved={() => {
-              setPersonEditorOpen(false);
-              void fetchPerson();
-            }}
-          />
-        </Suspense>
+        <PersonEditor
+          mode="edit"
+          initial={person}
+          onClose={() => setPersonEditorOpen(false)}
+          onSaved={() => {
+            setPersonEditorOpen(false);
+            void refreshPerson();
+          }}
+        />
       )}
     </div>
   );
