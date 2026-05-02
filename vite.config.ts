@@ -7,6 +7,22 @@ import { fileURLToPath, URL } from 'node:url'
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   base: './',
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (!id.includes('node_modules')) return;
+          // 合并 antd 与 @ant-design/*，避免与 icons/cssinjs 的循环依赖拆包告警
+          if (id.includes('node_modules/antd') || id.includes('node_modules/@ant-design')) {
+            return 'antd';
+          }
+          if (id.includes('node_modules/react-router')) return 'react-router';
+          if (id.includes('node_modules/react-dom')) return 'react-vendor';
+          if (id.includes('node_modules/react/')) return 'react-vendor';
+        },
+      },
+    },
+  },
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src',

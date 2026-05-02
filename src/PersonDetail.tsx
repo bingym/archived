@@ -1,68 +1,30 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { useParams, Link } from "react-router-dom";
-import { Button, Card, Modal, Pagination, Spin, Tabs, Typography } from "antd";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import { useParams } from "react-router-dom";
+import { Button, Modal, Spin, Tabs, Typography } from "antd";
 import { apiFetch, useIsAuthed } from "./auth";
-import { resolveImg } from "./lib/img";
-import ItemEditor, { type ItemKind } from "./components/ItemEditor";
-import PersonEditor from "./components/PersonEditor";
+import type { ItemKind } from "./components/ItemEditor";
+import { PAGE_SIZE, TAB_TO_KIND, tabToItemsKind } from "./person-detail/constants";
+import PersonDetailHeader from "./person-detail/PersonDetailHeader";
+import PersonInfoTab from "./person-detail/PersonInfoTab";
+import PersonBooksTab from "./person-detail/PersonBooksTab";
+import PersonArticlesTab from "./person-detail/PersonArticlesTab";
+import PersonVideosTab from "./person-detail/PersonVideosTab";
+import PersonPodcastsTab from "./person-detail/PersonPodcastsTab";
+import PersonTweetsTab from "./person-detail/PersonTweetsTab";
+import PersonAnswersTab from "./person-detail/PersonAnswersTab";
+import type {
+  ArticleItem,
+  AnswerItem,
+  BookItem,
+  PersonSummary,
+  PodcastItem,
+  TabKey,
+  TweetItem,
+  VideoItem,
+} from "./person-detail/types";
 
-const PAGE_SIZE = 50;
-
-interface BaseItem { id: number }
-interface BookItem extends BaseItem { title: string; url: string | null; cover: string | null }
-interface ArticleItem extends BaseItem { title: string; content: string | null }
-interface VideoItem extends BaseItem { title: string; url: string | null }
-interface PodcastItem extends BaseItem { title: string; url: string | null }
-interface TweetItem extends BaseItem { datetime: string | null; content: string | null; imgs: string[] }
-interface AnswerItem extends BaseItem { datetime: string | null; question: string | null; content: string | null }
-
-interface PersonCounts {
-  books: number;
-  articles: number;
-  videos: number;
-  podcasts: number;
-  tweets: number;
-  answers: number;
-}
-
-interface PersonSummary {
-  id: string;
-  name: string;
-  avatar: string | null;
-  description: string | null;
-  counts: PersonCounts;
-}
-
-type TabKey = "info" | "books" | "articles" | "videos" | "podcasts" | "twitter" | "answers";
-
-const TAB_TO_KIND: Partial<Record<TabKey, ItemKind>> = {
-  books: "books",
-  articles: "articles",
-  videos: "videos",
-  podcasts: "podcasts",
-  twitter: "tweets",
-  answers: "answers",
-};
-
-/** TAB key → `GET .../items/:kind` 路径段 */
-function tabToItemsKind(tab: TabKey): string | null {
-  switch (tab) {
-    case "books":
-      return "books";
-    case "articles":
-      return "articles";
-    case "videos":
-      return "videos";
-    case "podcasts":
-      return "podcasts";
-    case "twitter":
-      return "tweets";
-    case "answers":
-      return "answers";
-    default:
-      return null;
-  }
-}
+const ItemEditor = lazy(() => import("./components/ItemEditor"));
+const PersonEditor = lazy(() => import("./components/PersonEditor"));
 
 export default function PersonDetail() {
   const { id } = useParams();
@@ -172,16 +134,28 @@ export default function PersonDetail() {
     );
   }
 
-  const desc = person.description ?? "";
-
-  const onDeleteItem = async (kind: ItemKind, itemId: number) => {
-    if (!confirm("确认删除？")) return;
-    try {
-      await apiFetch(`/api/v1/${kind}/${itemId}`, { method: "DELETE" });
-      await reloadPersonAndList();
-    } catch (e) {
-      alert(e instanceof Error ? e.message : "删除失败");
-    }
+  const onDeleteItem = (kind: ItemKind, itemId: number) => {
+    Modal.confirm({
+      title: "确认删除",
+      content: "删除后不可恢复，确定要删除这条记录吗？",
+      okText: "删除",
+      okType: "danger",
+      cancelText: "取消",
+      centered: true,
+      maskClosable: true,
+      onOk: async () => {
+        try {
+          await apiFetch(`/api/v1/${kind}/${itemId}`, { method: "DELETE" });
+          await reloadPersonAndList();
+        } catch (e) {
+          Modal.error({
+            title: "删除失败",
+            content: e instanceof Error ? e.message : "删除失败",
+          });
+          return Promise.reject(e);
+        }
+      },
+    });
   };
 
   const itemKindForTab = TAB_TO_KIND[tab];
@@ -195,31 +169,12 @@ export default function PersonDetail() {
 
   const showTabSpinner = tab !== "info" && tabLoading;
 
+  const paginationProps = { page, setPage, total: tabTotal, pageSize: PAGE_SIZE };
+
   return (
     <div className="main-center-wrapper">
       <div className="container" style={{ alignItems: "stretch" }}>
-        <Link to="/people" className="mb-4 text-blue-700 font-bold hover:underline block">
-          &lt; 返回
-        </Link>
-        <div className="flex items-center mb-8">
-          <div className="avatar">
-            <div className="w-24 rounded overflow-hidden bg-[#f5f5f5]">
-              {person.avatar ? (
-                <img src={resolveImg(person.avatar)} alt={person.name} />
-              ) : (
-                <div className="w-24 h-24 bg-[#f5f5f5]" />
-              )}
-            </div>
-          </div>
-          <div className="ml-8 flex-1">
-            <h1 style={{ marginBottom: 8 }}>{person.name}</h1>
-          </div>
-          {authed && (
-            <Button size="small" onClick={() => setPersonEditorOpen(true)}>
-              编辑信息
-            </Button>
-          )}
-        </div>
+        <PersonDetailHeader person={person} authed={authed} onEditProfile={() => setPersonEditorOpen(true)} />
         <Tabs
           className="person-detail-tabs-nav-only mb-6"
           activeKey={tab}
@@ -244,308 +199,97 @@ export default function PersonDetail() {
             </div>
           )}
 
-          {tab === "info" && (
-            <div>
-              <div><b>姓名：</b>{person.name}</div>
-              <div><b>简介：</b>{desc}</div>
-            </div>
-          )}
+          {tab === "info" && <PersonInfoTab person={person} />}
 
           {tab === "books" && !tabLoading && (
-            <div>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: "32px 24px", justifyContent: "flex-start" }}>
-                {books.map((item) => (
-                  <div
-                    key={item.id}
-                    style={{
-                      background: "#fff",
-                      borderRadius: 8,
-                      boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
-                      padding: 16,
-                      display: "flex",
-                      flexDirection: "column",
-                      alignItems: "center",
-                      position: "relative",
-                    }}
-                  >
-                    {authed && (
-                      <div className="absolute top-1 right-1 flex gap-1">
-                        <Button
-                          size="small"
-                          onClick={() => setEditor({ kind: "books", initial: item as unknown as Record<string, unknown> })}
-                        >
-                          编辑
-                        </Button>
-                        <Button size="small" danger onClick={() => void onDeleteItem("books", item.id)}>
-                          ×
-                        </Button>
-                      </div>
-                    )}
-                    {item.cover && (
-                      <img
-                        src={resolveImg(item.cover)}
-                        alt={item.title}
-                        style={{ width: "10rem", height: "10rem", objectFit: "cover", borderRadius: 4, marginBottom: 12 }}
-                      />
-                    )}
-                    {item.url ? (
-                      <a
-                        href={item.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        style={{ fontWeight: 700, fontSize: 16, color: "#0078d7", textAlign: "center", textDecoration: "none" }}
-                      >
-                        {item.title}
-                      </a>
-                    ) : (
-                      <span style={{ fontWeight: 700, fontSize: 16, textAlign: "center" }}>{item.title}</span>
-                    )}
-                  </div>
-                ))}
-              </div>
-              <ListPagination page={page} setPage={setPage} total={tabTotal} pageSize={PAGE_SIZE} />
-            </div>
+            <PersonBooksTab
+              books={books}
+              authed={authed}
+              {...paginationProps}
+              onEdit={(item) => setEditor({ kind: "books", initial: item as unknown as Record<string, unknown> })}
+              onDelete={(item) => void onDeleteItem("books", item.id)}
+            />
           )}
 
           {tab === "articles" && !tabLoading && (
-            <div>
-              <ArticleList
-                articles={articles}
-                authed={authed}
-                onEdit={(item) => setEditor({ kind: "articles", initial: item as unknown as Record<string, unknown> })}
-                onDelete={(item) => void onDeleteItem("articles", item.id)}
-              />
-              <ListPagination page={page} setPage={setPage} total={tabTotal} pageSize={PAGE_SIZE} />
-            </div>
+            <PersonArticlesTab
+              articles={articles}
+              authed={authed}
+              {...paginationProps}
+              onEdit={(item) => setEditor({ kind: "articles", initial: item as unknown as Record<string, unknown> })}
+              onDelete={(item) => void onDeleteItem("articles", item.id)}
+            />
           )}
 
           {tab === "videos" && !tabLoading && (
-            <div>
-              <ul>
-                {videos.map((item) => (
-                  <li key={item.id} style={{ marginBottom: 12 }} className="flex items-center gap-2">
-                    {item.url ? (
-                      <a href={item.url} target="_blank" rel="noopener noreferrer" className="text-blue-700 underline font-bold">
-                        {item.title}
-                      </a>
-                    ) : (
-                      <span className="font-bold">{item.title}</span>
-                    )}
-                    {authed && (
-                      <>
-                        <Button size="small" onClick={() => setEditor({ kind: "videos", initial: item as unknown as Record<string, unknown> })}>编辑</Button>
-                        <Button size="small" danger onClick={() => void onDeleteItem("videos", item.id)}>×</Button>
-                      </>
-                    )}
-                  </li>
-                ))}
-              </ul>
-              <ListPagination page={page} setPage={setPage} total={tabTotal} pageSize={PAGE_SIZE} />
-            </div>
+            <PersonVideosTab
+              videos={videos}
+              authed={authed}
+              {...paginationProps}
+              onEdit={(item) => setEditor({ kind: "videos", initial: item as unknown as Record<string, unknown> })}
+              onDelete={(item) => void onDeleteItem("videos", item.id)}
+            />
           )}
 
           {tab === "podcasts" && !tabLoading && (
-            <div>
-              <ul>
-                {podcasts.map((item) => (
-                  <li key={item.id} style={{ marginBottom: 12 }} className="flex items-center gap-2">
-                    {item.url ? (
-                      <a href={item.url} target="_blank" rel="noopener noreferrer" className="text-blue-700 underline font-bold">
-                        {item.title}
-                      </a>
-                    ) : (
-                      <span className="font-bold">{item.title}</span>
-                    )}
-                    {authed && (
-                      <>
-                        <Button size="small" onClick={() => setEditor({ kind: "podcasts", initial: item as unknown as Record<string, unknown> })}>编辑</Button>
-                        <Button size="small" danger onClick={() => void onDeleteItem("podcasts", item.id)}>×</Button>
-                      </>
-                    )}
-                  </li>
-                ))}
-              </ul>
-              <ListPagination page={page} setPage={setPage} total={tabTotal} pageSize={PAGE_SIZE} />
-            </div>
+            <PersonPodcastsTab
+              podcasts={podcasts}
+              authed={authed}
+              {...paginationProps}
+              onEdit={(item) => setEditor({ kind: "podcasts", initial: item as unknown as Record<string, unknown> })}
+              onDelete={(item) => void onDeleteItem("podcasts", item.id)}
+            />
           )}
 
           {tab === "twitter" && !tabLoading && (
-            <div>
-              {tweets.map((item) => (
-                <Card key={item.id} className="mb-4 relative" styles={{ body: { padding: 16 } }}>
-                  <div className="flex items-center justify-between">
-                    <div className="text-xs text-gray-400 mb-1">{item.datetime}</div>
-                    {authed && (
-                      <div className="flex gap-1">
-                        <Button size="small" onClick={() => setEditor({ kind: "tweets", initial: item as unknown as Record<string, unknown> })}>编辑</Button>
-                        <Button size="small" danger onClick={() => void onDeleteItem("tweets", item.id)}>×</Button>
-                      </div>
-                    )}
-                  </div>
-                  <div
-                    className="text-base whitespace-pre-wrap"
-                    dangerouslySetInnerHTML={{ __html: item.content ?? "" }}
-                  />
-                  {item.imgs && item.imgs.length > 0 && (
-                    <div className="flex flex-wrap gap-2 mt-2">
-                      {item.imgs.map((k) => (
-                        <a key={k} href={resolveImg(k)} target="_blank" rel="noopener noreferrer">
-                          <img
-                            src={resolveImg(k)}
-                            alt=""
-                            style={{ maxWidth: 200, maxHeight: 200, objectFit: "cover", borderRadius: 6 }}
-                          />
-                        </a>
-                      ))}
-                    </div>
-                  )}
-                </Card>
-              ))}
-              <ListPagination page={page} setPage={setPage} total={tabTotal} pageSize={PAGE_SIZE} />
-            </div>
+            <PersonTweetsTab
+              tweets={tweets}
+              authed={authed}
+              {...paginationProps}
+              onEdit={(item) => setEditor({ kind: "tweets", initial: item as unknown as Record<string, unknown> })}
+              onDelete={(item) => void onDeleteItem("tweets", item.id)}
+            />
           )}
 
           {tab === "answers" && !tabLoading && (
-            <div>
-              <ul>
-                {answers.map((item) => (
-                  <li key={item.id} className="mb-4">
-                    <Card styles={{ body: { padding: 16 } }}>
-                      <div className="flex items-center justify-between">
-                        <div className="text-xs text-gray-400 mb-1">{formatDatetime(item.datetime)}</div>
-                        {authed && (
-                          <div className="flex gap-1">
-                            <Button size="small" onClick={() => setEditor({ kind: "answers", initial: item as unknown as Record<string, unknown> })}>编辑</Button>
-                            <Button size="small" danger onClick={() => void onDeleteItem("answers", item.id)}>×</Button>
-                          </div>
-                        )}
-                      </div>
-                      <div className="font-bold mb-2">Q: {item.question}</div>
-                      <div
-                        className="text-base whitespace-pre-wrap"
-                        dangerouslySetInnerHTML={{ __html: item.content ?? "" }}
-                      />
-                    </Card>
-                  </li>
-                ))}
-              </ul>
-              <ListPagination page={page} setPage={setPage} total={tabTotal} pageSize={PAGE_SIZE} />
-            </div>
+            <PersonAnswersTab
+              answers={answers}
+              authed={authed}
+              {...paginationProps}
+              onEdit={(item) => setEditor({ kind: "answers", initial: item as unknown as Record<string, unknown> })}
+              onDelete={(item) => void onDeleteItem("answers", item.id)}
+            />
           )}
         </div>
       </div>
 
       {editor && id && (
-        <ItemEditor
-          kind={editor.kind}
-          personId={id}
-          initial={editor.initial}
-          onClose={() => setEditor(null)}
-          onSaved={() => {
-            setEditor(null);
-            void reloadPersonAndList();
-          }}
-        />
+        <Suspense fallback={null}>
+          <ItemEditor
+            kind={editor.kind}
+            personId={id}
+            initial={editor.initial}
+            onClose={() => setEditor(null)}
+            onSaved={() => {
+              setEditor(null);
+              void reloadPersonAndList();
+            }}
+          />
+        </Suspense>
       )}
       {personEditorOpen && (
-        <PersonEditor
-          mode="edit"
-          initial={person}
-          onClose={() => setPersonEditorOpen(false)}
-          onSaved={() => {
-            setPersonEditorOpen(false);
-            void fetchPerson();
-          }}
-        />
+        <Suspense fallback={null}>
+          <PersonEditor
+            mode="edit"
+            initial={person}
+            onClose={() => setPersonEditorOpen(false)}
+            onSaved={() => {
+              setPersonEditorOpen(false);
+              void fetchPerson();
+            }}
+          />
+        </Suspense>
       )}
-    </div>
-  );
-}
-
-const formatDatetime = (dt: string | null | undefined) => {
-  if (!dt) return "";
-  if (/^\d+$/.test(dt)) {
-    let ts = Number(dt);
-    if (dt.length === 10) ts = ts * 1000;
-    const d = new Date(ts);
-    return d.toISOString().replace("T", " ").replace("Z", "");
-  }
-  return dt;
-};
-
-interface ListPaginationProps {
-  page: number;
-  setPage: (n: number) => void;
-  total: number;
-  pageSize: number;
-}
-function ListPagination({ page, setPage, total, pageSize }: ListPaginationProps) {
-  return (
-    <div className="flex justify-center my-4">
-      <Pagination
-        current={page}
-        total={total}
-        pageSize={pageSize}
-        onChange={setPage}
-        showSizeChanger={false}
-        hideOnSinglePage
-        showLessItems
-      />
-    </div>
-  );
-}
-
-function ArticleList({
-  articles,
-  authed,
-  onEdit,
-  onDelete,
-}: {
-  articles: ArticleItem[];
-  authed: boolean;
-  onEdit: (a: ArticleItem) => void;
-  onDelete: (a: ArticleItem) => void;
-}) {
-  const [modalContent, setModalContent] = useState<string | null>(null);
-
-  return (
-    <div>
-      <ul>
-        {articles.map((item) => {
-          const firstLine = ((item.content ?? "").split("\n")[0] || item.title).replace(/^#+\s*/, "") || item.title;
-          return (
-            <li key={item.id} style={{ marginBottom: 16 }} className="flex items-center gap-2">
-              <button
-                type="button"
-                className="text-blue-700 underline font-bold hover:text-blue-900 bg-transparent border-0 cursor-pointer p-0 font-inherit"
-                onClick={() => setModalContent(item.content ?? "")}
-              >
-                {firstLine}
-              </button>
-              {authed && (
-                <>
-                  <Button size="small" onClick={() => onEdit(item)}>编辑</Button>
-                  <Button size="small" danger onClick={() => onDelete(item)}>×</Button>
-                </>
-              )}
-            </li>
-          );
-        })}
-      </ul>
-      <Modal
-        open={modalContent !== null}
-        onCancel={() => setModalContent(null)}
-        footer={null}
-        width="80vw"
-        style={{ top: 40 }}
-        zIndex={1000}
-        title="正文"
-        destroyOnClose
-      >
-        <Typography.Paragraph style={{ whiteSpace: "pre-wrap", marginBottom: 0 }}>
-          {modalContent ?? ""}
-        </Typography.Paragraph>
-      </Modal>
     </div>
   );
 }
