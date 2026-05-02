@@ -99,7 +99,7 @@ export default function PersonDetail() {
     let cancelled = false;
     setTabLoading(true);
     apiFetch<{ items: unknown[]; total: number }>(
-      `/api/v1/people/${id}/items/${kind}?page=${page}&pageSize=${PAGE_SIZE}`
+      `/api/v1/people/${id}/${kind}?page=${page}&pageSize=${PAGE_SIZE}`
     )
       .then((r) => {
         if (!cancelled) {

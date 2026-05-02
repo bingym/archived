@@ -48,8 +48,8 @@ type ItemListKind = keyof typeof ITEM_LIST_KINDS;
 const DEFAULT_ITEM_PAGE_SIZE = 50;
 const MAX_ITEM_PAGE_SIZE = 100;
 
-/** 分页拉取某人的一类条目（须注册在 `GET /:id` 之前）。 */
-people.get("/:id/items/:kind", async (c) => {
+/** 分页拉取某人的一类条目（两段路径须与 `GET /:id` 区分）。 */
+people.get("/:id/:kind", async (c) => {
   const id = c.req.param("id");
   const kind = c.req.param("kind") as ItemListKind;
   if (!(kind in ITEM_LIST_KINDS)) {
@@ -67,10 +67,12 @@ people.get("/:id/items/:kind", async (c) => {
   const pageSize = Math.min(MAX_ITEM_PAGE_SIZE, Math.max(1, pageSizeRaw));
   const offset = (page - 1) * pageSize;
 
+  const orderSql = kind === "tweets" ? "datetime DESC, id DESC" : "id ASC";
+
   const [countRes, rowsRes] = await c.env.DB.batch([
     c.env.DB.prepare(`SELECT COUNT(*) as n FROM ${table} WHERE person_id = ?`).bind(id),
     c.env.DB
-      .prepare(`SELECT * FROM ${table} WHERE person_id = ? ORDER BY id ASC LIMIT ? OFFSET ?`)
+      .prepare(`SELECT * FROM ${table} WHERE person_id = ? ORDER BY ${orderSql} LIMIT ? OFFSET ?`)
       .bind(id, pageSize, offset),
   ]);
 

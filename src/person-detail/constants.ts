@@ -12,7 +12,7 @@ export const TAB_TO_KIND: Partial<Record<TabKey, ItemKind>> = {
   answers: "answers",
 };
 
-/** TAB key → `GET .../items/:kind` 路径段 */
+/** TAB key → `GET .../people/:id/:kind` 中的 `kind` 路径段 */
 export function tabToItemsKind(tab: TabKey): string | null {
   switch (tab) {
     case "books":
