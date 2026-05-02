@@ -1,66 +1,18 @@
 @import "tailwindcss";
 
-html, body{
-  background: #e5e5e5;
-  height: 100%;
-  width: 100%;
+html,
+body {
   margin: 0;
   padding: 0;
+  height: 100%;
+  width: 100%;
 }
 
-.main-center-wrapper {
-  min-height: 100vh;
-  height: 100vh;
-  display: flex;
-  align-items: stretch;
-  justify-content: stretch;
+#root {
+  min-height: 100%;
 }
 
 /* Tabs 仅作导航，正文在下方单独渲染 */
 .person-detail-tabs-nav-only .ant-tabs-content-holder {
   display: none;
-}
-
-.container {
-  max-width: none;
-  margin: 0;
-  padding: 48px 32px 32px 32px;
-  background: #e5e5e5;
-  display: flex;
-  flex-direction: column;
-  box-sizing: border-box;
-}
-.row {
-  display: flex;
-  margin-bottom: 48px;
-  justify-content: center;
-  width: 100%;
-}
-.avatar {
-  width: 96px;
-  height: 96px;
-  border-radius: 0;
-  object-fit: cover;
-  margin-bottom: 18px;
-  background: #fff;
-  box-sizing: border-box;
-}
-.avatar.placeholder {
-  background: #ccc;
-  border: 4px solid #fff;
-}
-.name {
-  font-size: 24px;
-  font-weight: 900;
-  margin-top: 12px;
-  color: #fff;
-  letter-spacing: 1.5px;
-}
-h1 {
-  font-size: 48px;
-  font-weight: 900;
-  color: #0078d7;
-  margin-bottom: 48px;
-  letter-spacing: 2.5px;
-  text-align: left;
 }

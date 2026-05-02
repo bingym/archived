@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
-import { Button, Typography } from "antd";
-import { CloseOutlined } from "@ant-design/icons";
+import { Button, Flex, Typography, theme } from "antd";
+import { CloseOutlined, PlusOutlined } from "@ant-design/icons";
 import { deleteImage, isR2Key, resolveImg, uploadImage } from "../lib/img";
 
 interface Props {
@@ -12,6 +12,7 @@ interface Props {
 }
 
 export default function ImageMultiUpload({ value, onChange, label, size = 96, max = 9 }: Props) {
+  const { token } = theme.useToken();
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -46,14 +47,25 @@ export default function ImageMultiUpload({ value, onChange, label, size = 96, ma
   const canAdd = value.length < max;
 
   return (
-    <div className="flex flex-col gap-2">
-      {label && <span className="text-sm font-semibold text-gray-700">{label}</span>}
-      <div className="flex flex-wrap gap-2">
+    <Flex vertical gap={token.marginXS}>
+      {label && (
+        <Typography.Text type="secondary" style={{ fontSize: token.fontSizeSM }}>
+          {label}
+        </Typography.Text>
+      )}
+      <Flex wrap="wrap" gap={token.marginSM}>
         {value.map((k) => (
           <div
             key={k}
-            className="relative rounded border overflow-hidden bg-[#f5f5f5]"
-            style={{ width: size, height: size }}
+            style={{
+              position: "relative",
+              width: size,
+              height: size,
+              borderRadius: token.borderRadius,
+              border: `1px solid ${token.colorBorder}`,
+              overflow: "hidden",
+              background: token.colorFillAlter,
+            }}
           >
             <img src={resolveImg(k)} alt="" style={{ width: size, height: size, objectFit: "cover" }} />
             <Button
@@ -75,27 +87,26 @@ export default function ImageMultiUpload({ value, onChange, label, size = 96, ma
               type="file"
               accept="image/*"
               multiple
-              className="hidden"
+              style={{ display: "none" }}
               onChange={(e) => {
                 const files = e.target.files;
                 if (files && files.length) void handlePick(files);
                 e.target.value = "";
               }}
             />
-            <button
-              type="button"
-              className="rounded border-2 border-dashed border-gray-300 text-gray-400 hover:border-gray-500 hover:text-gray-600 transition flex items-center justify-center"
-              style={{ width: size, height: size, fontSize: 28 }}
+            <Button
+              type="dashed"
+              style={{ width: size, height: size, padding: 0 }}
               disabled={uploading}
               onClick={() => inputRef.current?.click()}
               title="添加图片"
             >
-              {uploading ? "…" : "+"}
-            </button>
+              {uploading ? "…" : <PlusOutlined style={{ fontSize: 20 }} />}
+            </Button>
           </>
         )}
-      </div>
+      </Flex>
       {error && <Typography.Text type="danger">{error}</Typography.Text>}
-    </div>
+    </Flex>
   );
 }

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Button, Input, Modal, Typography } from "antd";
+import { Button, Flex, Form, Input, Modal, Space, Typography } from "antd";
 import { apiFetch } from "../auth";
 import ImageUpload from "./ImageUpload";
 import ImageMultiUpload from "./ImageMultiUpload";
@@ -132,69 +132,71 @@ export default function ItemEditor({ kind, personId, initial, onClose, onSaved }
       onCancel={() => (saving ? undefined : onClose())}
       width={720}
       zIndex={1500}
-      styles={{ body: { maxHeight: "70vh", overflowY: "auto" } }}
-      footer={[
-        <Button key="cancel" onClick={onClose} disabled={saving}>
-          取消
-        </Button>,
-        <Button key="save" type="primary" loading={saving} onClick={() => void submit()}>
-          保存
-        </Button>,
-      ]}
+      styles={{ body: { maxHeight: "70vh", overflowY: "auto", paddingTop: 8 } }}
+      footer={
+        <Flex justify="flex-end">
+          <Space>
+            <Button onClick={onClose} disabled={saving}>
+              取消
+            </Button>
+            <Button type="primary" loading={saving} onClick={() => void submit()}>
+              保存
+            </Button>
+          </Space>
+        </Flex>
+      }
       maskClosable={!saving}
     >
-      <div className="flex flex-col gap-4">
+      <Form layout="vertical" requiredMark="optional">
         {fields.map((f) => {
           if (f.type === "image") {
             return (
-              <ImageUpload
-                key={f.key}
-                label={f.label}
-                prefix={kind === "books" ? "covers" : "avatars"}
-                value={(state[f.key] as string | null) ?? null}
-                onChange={(k) => setState((s) => ({ ...s, [f.key]: k }))}
-              />
+              <Form.Item key={f.key} label={f.label}>
+                <ImageUpload
+                  prefix={kind === "books" ? "covers" : "avatars"}
+                  value={(state[f.key] as string | null) ?? null}
+                  onChange={(k) => setState((s) => ({ ...s, [f.key]: k }))}
+                />
+              </Form.Item>
             );
           }
           if (f.type === "images") {
             return (
-              <ImageMultiUpload
-                key={f.key}
-                label={f.label}
-                value={(state[f.key] as string[]) ?? []}
-                onChange={(keys) => setState((s) => ({ ...s, [f.key]: keys }))}
-              />
+              <Form.Item key={f.key} label={f.label}>
+                <ImageMultiUpload
+                  value={(state[f.key] as string[]) ?? []}
+                  onChange={(keys) => setState((s) => ({ ...s, [f.key]: keys }))}
+                />
+              </Form.Item>
             );
           }
           if (f.type === "textarea") {
             return (
-              <div key={f.key}>
-                <Typography.Text strong className="block mb-1">
-                  {f.label}
-                </Typography.Text>
+              <Form.Item key={f.key} label={f.label}>
                 <Input.TextArea
                   rows={f.key === "content" ? 12 : 4}
                   value={(state[f.key] as string) ?? ""}
                   onChange={(e) => setState((s) => ({ ...s, [f.key]: e.target.value }))}
                 />
-              </div>
+              </Form.Item>
             );
           }
           return (
-            <div key={f.key}>
-              <Typography.Text strong className="block mb-1">
-                {f.label}
-              </Typography.Text>
+            <Form.Item key={f.key} label={f.label}>
               <Input
                 type={f.type === "url" ? "url" : "text"}
                 value={(state[f.key] as string) ?? ""}
                 onChange={(e) => setState((s) => ({ ...s, [f.key]: e.target.value }))}
               />
-            </div>
+            </Form.Item>
           );
         })}
-        {error && <Typography.Text type="danger">{error}</Typography.Text>}
-      </div>
+        {error && (
+          <Typography.Text type="danger" role="alert">
+            {error}
+          </Typography.Text>
+        )}
+      </Form>
     </Modal>
   );
 }

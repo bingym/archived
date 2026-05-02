@@ -1,9 +1,11 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from "react";
-import { useParams } from "react-router-dom";
-import { Button, Modal, Spin, Tabs, Typography } from "antd";
+import { Navigate, useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { Button, Flex, Modal, Spin, Tabs, Typography, theme } from "antd";
+import { PlusOutlined } from "@ant-design/icons";
 import { apiFetch, useIsAuthed } from "./auth";
 import type { ItemKind } from "./components/ItemEditor";
 import { PAGE_SIZE, TAB_TO_KIND, tabToItemsKind } from "./person-detail/constants";
+import { buildPersonDetailPath, parsePersonDetailPage, parsePersonDetailTabParam } from "./person-detail/personDetailUrl";
 import PersonDetailHeader from "./person-detail/PersonDetailHeader";
 import PersonInfoTab from "./person-detail/PersonInfoTab";
 import PersonBooksTab from "./person-detail/PersonBooksTab";
@@ -26,12 +28,16 @@ import type {
 const ItemEditor = lazy(() => import("./components/ItemEditor"));
 const PersonEditor = lazy(() => import("./components/PersonEditor"));
 
+const { Text } = Typography;
+
 export default function PersonDetail() {
-  const { id } = useParams();
+  const { token } = theme.useToken();
+  const navigate = useNavigate();
+  const { id, tab: tabSegment } = useParams<{ id: string; tab: string }>();
+  const [searchParams] = useSearchParams();
+
   const authed = useIsAuthed();
   const [person, setPerson] = useState<PersonSummary | null>(null);
-  const [tab, setTab] = useState<TabKey>("info");
-  const [page, setPage] = useState(1);
   const [tabItems, setTabItems] = useState<unknown[]>([]);
   const [tabTotal, setTabTotal] = useState(0);
   const [tabLoading, setTabLoading] = useState(false);
@@ -41,6 +47,10 @@ export default function PersonDetail() {
     | null
   >(null);
   const [personEditorOpen, setPersonEditorOpen] = useState(false);
+
+  const tabParsed = parsePersonDetailTabParam(tabSegment);
+  const pageFromUrl = parsePersonDetailPage(searchParams);
+  const page = tabParsed === null || tabParsed === "info" ? 1 : pageFromUrl;
 
   const fetchPerson = useCallback(async () => {
     if (!id) return;
@@ -57,8 +67,14 @@ export default function PersonDetail() {
   }, [fetchPerson]);
 
   useEffect(() => {
-    const kind = tabToItemsKind(tab);
-    if (!id || !kind) {
+    if (!id || tabParsed === null) {
+      setTabItems([]);
+      setTabTotal(0);
+      setTabLoading(false);
+      return;
+    }
+    const kind = tabToItemsKind(tabParsed);
+    if (!kind) {
       setTabItems([]);
       setTabTotal(0);
       setTabLoading(false);
@@ -87,7 +103,7 @@ export default function PersonDetail() {
     return () => {
       cancelled = true;
     };
-  }, [id, tab, page, listNonce]);
+  }, [id, tabParsed, page, listNonce]);
 
   const reloadPersonAndList = useCallback(async () => {
     await fetchPerson();
@@ -107,31 +123,68 @@ export default function PersonDetail() {
     return list;
   }, [person, authed]);
 
+  const allowedTabKeys = useMemo(() => new Set(dynamicTabList.map((t) => t.key)), [dynamicTabList]);
+
   const tabItemsConfig = useMemo(
     () =>
       dynamicTabList.map((t) => ({
         key: t.key,
         label: (
-          <>
+          <span>
             {t.label}
             {t.count > 0 && (
-              <Typography.Text type="secondary" className="ml-1 text-xs">
+              <Text type="secondary" style={{ marginLeft: 4, fontSize: token.fontSizeSM }}>
+                {" "}
                 ({t.count})
-              </Typography.Text>
+              </Text>
             )}
-          </>
+          </span>
         ),
         children: <span />,
       })),
-    [dynamicTabList]
+    [dynamicTabList, token.fontSizeSM]
   );
+
+  const goTab = useCallback(
+    (next: TabKey) => {
+      if (!id) return;
+      navigate(buildPersonDetailPath(id, next, 1));
+    },
+    [id, navigate]
+  );
+
+  const goPage = useCallback(
+    (nextPage: number) => {
+      if (!id || !tabParsed) return;
+      navigate(buildPersonDetailPath(id, tabParsed, nextPage));
+    },
+    [id, tabParsed, navigate]
+  );
+
+  if (!id) {
+    return <Navigate to="/people" replace />;
+  }
+
+  if (tabParsed === null) {
+    return <Navigate to={buildPersonDetailPath(id, "info", 1)} replace />;
+  }
+
+  if (tabParsed === "info" && searchParams.has("page")) {
+    return <Navigate to={buildPersonDetailPath(id, "info", 1)} replace />;
+  }
+
+  const tab = tabParsed;
 
   if (!person) {
     return (
-      <div className="main-center-wrapper">
-        <div className="container">加载中...</div>
-      </div>
+      <Flex justify="center" align="center" style={{ minHeight: 320 }}>
+        <Spin size="large" tip="加载中…" />
+      </Flex>
     );
+  }
+
+  if (!allowedTabKeys.has(tab)) {
+    return <Navigate to={buildPersonDetailPath(id, "info", 1)} replace />;
   }
 
   const onDeleteItem = (kind: ItemKind, itemId: number) => {
@@ -151,6 +204,7 @@ export default function PersonDetail() {
           Modal.error({
             title: "删除失败",
             content: e instanceof Error ? e.message : "删除失败",
+            maskClosable: true,
           });
           return Promise.reject(e);
         }
@@ -169,98 +223,95 @@ export default function PersonDetail() {
 
   const showTabSpinner = tab !== "info" && tabLoading;
 
-  const paginationProps = { page, setPage, total: tabTotal, pageSize: PAGE_SIZE };
+  const paginationProps = { page, setPage: goPage, total: tabTotal, pageSize: PAGE_SIZE };
 
   return (
-    <div className="main-center-wrapper">
-      <div className="container" style={{ alignItems: "stretch" }}>
-        <PersonDetailHeader person={person} authed={authed} onEditProfile={() => setPersonEditorOpen(true)} />
-        <Tabs
-          className="person-detail-tabs-nav-only mb-6"
-          activeKey={tab}
-          onChange={(k) => {
-            setPage(1);
-            setTab(k as TabKey);
-          }}
-          items={tabItemsConfig}
-        />
-        {authed && itemKindForTab && (
-          <div className="mb-4">
-            <Button type="primary" size="small" onClick={() => setEditor({ kind: itemKindForTab, initial: null })}>
-              + 新增
-            </Button>
-          </div>
+    <div style={{ maxWidth: 1200, margin: "0 auto" }}>
+      <PersonDetailHeader person={person} authed={authed} onEditProfile={() => setPersonEditorOpen(true)} />
+      <Tabs
+        className="person-detail-tabs-nav-only"
+        style={{ marginBottom: token.marginLG }}
+        activeKey={tab}
+        onChange={(k) => goTab(k as TabKey)}
+        items={tabItemsConfig}
+      />
+      {authed && itemKindForTab && (
+        <Flex style={{ marginBottom: token.marginMD }}>
+          <Button type="primary" icon={<PlusOutlined />} onClick={() => setEditor({ kind: itemKindForTab, initial: null })}>
+            新增条目
+          </Button>
+        </Flex>
+      )}
+
+      <div>
+        {showTabSpinner && (
+          <Flex align="center" gap="small" style={{ marginBottom: token.marginMD }}>
+            <Spin size="small" />
+            <Text type="secondary">加载中…</Text>
+          </Flex>
         )}
 
-        <div>
-          {showTabSpinner && (
-            <div className="text-sm text-gray-500 mb-4">
-              <Spin size="small" /> 加载中...
-            </div>
-          )}
+        {tab === "info" && <PersonInfoTab person={person} />}
 
-          {tab === "info" && <PersonInfoTab person={person} />}
+        {tab === "books" && !tabLoading && (
+          <PersonBooksTab
+            books={books}
+            authed={authed}
+            {...paginationProps}
+            onEdit={(item) => setEditor({ kind: "books", initial: item as unknown as Record<string, unknown> })}
+            onDelete={(item) => void onDeleteItem("books", item.id)}
+          />
+        )}
 
-          {tab === "books" && !tabLoading && (
-            <PersonBooksTab
-              books={books}
-              authed={authed}
-              {...paginationProps}
-              onEdit={(item) => setEditor({ kind: "books", initial: item as unknown as Record<string, unknown> })}
-              onDelete={(item) => void onDeleteItem("books", item.id)}
-            />
-          )}
+        {tab === "articles" && !tabLoading && (
+          <PersonArticlesTab
+            articles={articles}
+            authed={authed}
+            {...paginationProps}
+            onEdit={(item) => setEditor({ kind: "articles", initial: item as unknown as Record<string, unknown> })}
+            onDelete={(item) => void onDeleteItem("articles", item.id)}
+          />
+        )}
 
-          {tab === "articles" && !tabLoading && (
-            <PersonArticlesTab
-              articles={articles}
-              authed={authed}
-              {...paginationProps}
-              onEdit={(item) => setEditor({ kind: "articles", initial: item as unknown as Record<string, unknown> })}
-              onDelete={(item) => void onDeleteItem("articles", item.id)}
-            />
-          )}
+        {tab === "videos" && !tabLoading && (
+          <PersonVideosTab
+            videos={videos}
+            authed={authed}
+            {...paginationProps}
+            onEdit={(item) => setEditor({ kind: "videos", initial: item as unknown as Record<string, unknown> })}
+            onDelete={(item) => void onDeleteItem("videos", item.id)}
+          />
+        )}
 
-          {tab === "videos" && !tabLoading && (
-            <PersonVideosTab
-              videos={videos}
-              authed={authed}
-              {...paginationProps}
-              onEdit={(item) => setEditor({ kind: "videos", initial: item as unknown as Record<string, unknown> })}
-              onDelete={(item) => void onDeleteItem("videos", item.id)}
-            />
-          )}
+        {tab === "podcasts" && !tabLoading && (
+          <PersonPodcastsTab
+            podcasts={podcasts}
+            authed={authed}
+            {...paginationProps}
+            onEdit={(item) => setEditor({ kind: "podcasts", initial: item as unknown as Record<string, unknown> })}
+            onDelete={(item) => void onDeleteItem("podcasts", item.id)}
+          />
+        )}
 
-          {tab === "podcasts" && !tabLoading && (
-            <PersonPodcastsTab
-              podcasts={podcasts}
-              authed={authed}
-              {...paginationProps}
-              onEdit={(item) => setEditor({ kind: "podcasts", initial: item as unknown as Record<string, unknown> })}
-              onDelete={(item) => void onDeleteItem("podcasts", item.id)}
-            />
-          )}
+        {tab === "twitter" && !tabLoading && (
+          <PersonTweetsTab
+            tweets={tweets}
+            authed={authed}
+            {...paginationProps}
+            onEdit={(item) => setEditor({ kind: "tweets", initial: item as unknown as Record<string, unknown> })}
+            onDelete={(item) => void onDeleteItem("tweets", item.id)}
+          />
+        )}
 
-          {tab === "twitter" && !tabLoading && (
-            <PersonTweetsTab
-              tweets={tweets}
-              authed={authed}
-              {...paginationProps}
-              onEdit={(item) => setEditor({ kind: "tweets", initial: item as unknown as Record<string, unknown> })}
-              onDelete={(item) => void onDeleteItem("tweets", item.id)}
-            />
-          )}
-
-          {tab === "answers" && !tabLoading && (
-            <PersonAnswersTab
-              answers={answers}
-              authed={authed}
-              {...paginationProps}
-              onEdit={(item) => setEditor({ kind: "answers", initial: item as unknown as Record<string, unknown> })}
-              onDelete={(item) => void onDeleteItem("answers", item.id)}
-            />
-          )}
-        </div>
+        {tab === "answers" && !tabLoading && (
+          <PersonAnswersTab
+            answers={answers}
+            authed={authed}
+            {...paginationProps}
+            onEdit={(item) => setEditor({ kind: "answers", initial: item as unknown as Record<string, unknown> })}
+            onDelete={(item) => void onDeleteItem("answers", item.id)}
+          />
+        )}
       </div>
 
       {editor && id && (

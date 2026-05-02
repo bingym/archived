@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Button, Input, Modal, Typography } from "antd";
+import { Button, Flex, Form, Input, Modal, Space, Typography } from "antd";
 import { apiFetch } from "../auth";
 import ImageUpload from "./ImageUpload";
 
@@ -63,43 +63,45 @@ export default function PersonEditor({ mode, initial, onClose, onSaved }: Props)
 
   return (
     <Modal
-      title={mode === "create" ? "新建 Person" : "编辑 Person"}
+      title={mode === "create" ? "新建人物" : "编辑人物"}
       open
       onCancel={() => (saving ? undefined : onClose())}
       width={560}
       zIndex={1500}
-      footer={[
-        <Button key="cancel" onClick={onClose} disabled={saving}>
-          取消
-        </Button>,
-        <Button key="save" type="primary" loading={saving} onClick={() => void submit()}>
-          保存
-        </Button>,
-      ]}
+      footer={
+        <Flex justify="flex-end">
+          <Space>
+            <Button onClick={onClose} disabled={saving}>
+              取消
+            </Button>
+            <Button type="primary" loading={saving} onClick={() => void submit()}>
+              保存
+            </Button>
+          </Space>
+        </Flex>
+      }
       maskClosable={!saving}
+      destroyOnClose
     >
-      <div className="flex flex-col gap-4">
-        <div>
-          <Typography.Text strong className="block mb-1">
-            ID（短代号，建议英文小写，无空格）
+      <Form layout="vertical" requiredMark="optional" style={{ marginTop: 8 }}>
+        <Form.Item label="ID（短代号，英文小写、无空格）" tooltip="创建后不可修改">
+          <Input disabled={mode === "edit"} value={id} onChange={(e) => setId(e.target.value)} placeholder="例如 elonmusk" />
+        </Form.Item>
+        <Form.Item label="姓名">
+          <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="显示名称" />
+        </Form.Item>
+        <Form.Item label="头像">
+          <ImageUpload prefix="avatars" value={avatar} onChange={setAvatar} size={96} />
+        </Form.Item>
+        <Form.Item label="简介">
+          <Input.TextArea rows={4} value={description ?? ""} onChange={(e) => setDescription(e.target.value)} placeholder="可选" />
+        </Form.Item>
+        {error && (
+          <Typography.Text type="danger" role="alert">
+            {error}
           </Typography.Text>
-          <Input disabled={mode === "edit"} value={id} onChange={(e) => setId(e.target.value)} placeholder="elonmusk" />
-        </div>
-        <div>
-          <Typography.Text strong className="block mb-1">
-            Name
-          </Typography.Text>
-          <Input value={name} onChange={(e) => setName(e.target.value)} />
-        </div>
-        <ImageUpload label="Avatar" prefix="avatars" value={avatar} onChange={setAvatar} size={96} />
-        <div>
-          <Typography.Text strong className="block mb-1">
-            Description
-          </Typography.Text>
-          <Input.TextArea rows={4} value={description ?? ""} onChange={(e) => setDescription(e.target.value)} />
-        </div>
-        {error && <Typography.Text type="danger">{error}</Typography.Text>}
-      </div>
+        )}
+      </Form>
     </Modal>
   );
 }

@@ -1,12 +1,12 @@
-import { Button, Card } from "antd";
+import { Button, Card, Flex, Image, Typography, theme } from "antd";
+import { DeleteOutlined, EditOutlined } from "@ant-design/icons";
 import { resolveImg } from "../lib/img";
 import type { TweetItem } from "./types";
 import ListPagination from "./ListPagination";
-import { EditOutlined, DeleteOutlined } from "@ant-design/icons";
 
-const CARD_BODY_PADDING = 16;
-/** 推文卡片之间的垂直间距（原 mb-4 偏紧） */
-const CARD_GAP = 8;
+const { Text } = Typography;
+
+const CARD_GAP = 16;
 
 interface Props {
   tweets: TweetItem[];
@@ -29,45 +29,45 @@ export default function PersonTweetsTab({
   onEdit,
   onDelete,
 }: Props) {
+  const { token } = theme.useToken();
   return (
     <div>
-      <div style={{ display: "flex", flexDirection: "column", gap: CARD_GAP }}>
+      <Flex vertical gap={CARD_GAP}>
         {tweets.map((item) => (
-          <Card
-            key={item.id}
-            className="relative"
-            styles={{
-              body: {
-                padding: CARD_BODY_PADDING,
-              },
-            }}
-          >
-            <div className="flex items-center justify-between mb-2">
-              <div className="text-xs text-gray-400">{item.datetime}</div>
+          <Card key={item.id} styles={{ body: { padding: token.paddingLG } }}>
+            <Flex justify="space-between" align="flex-start" gap={token.marginSM} wrap="wrap">
+              <Text type="secondary" style={{ fontSize: token.fontSizeSM }}>
+                {item.datetime}
+              </Text>
               {authed && (
-                <div className="flex gap-1">
-                  <Button type="text" size="small" onClick={() => onEdit(item)} icon={<EditOutlined />} />
-                  <Button type="text" size="small" danger onClick={() => onDelete(item)} icon={<DeleteOutlined />} />
-                </div>
+                <Flex gap={token.marginXXS}>
+                  <Button type="text" size="small" icon={<EditOutlined />} onClick={() => onEdit(item)} aria-label="编辑" />
+                  <Button type="text" size="small" danger icon={<DeleteOutlined />} onClick={() => onDelete(item)} aria-label="删除" />
+                </Flex>
               )}
-            </div>
-            <div className="text-base whitespace-pre-wrap" dangerouslySetInnerHTML={{ __html: item.content ?? "" }} />
+            </Flex>
+            <div
+              style={{ marginTop: token.marginSM, fontSize: token.fontSize, lineHeight: token.lineHeight }}
+              dangerouslySetInnerHTML={{ __html: item.content ?? "" }}
+            />
             {item.imgs && item.imgs.length > 0 && (
-              <div className="flex flex-wrap gap-3 mt-4">
+              <Flex wrap="wrap" gap={token.marginSM} style={{ marginTop: token.marginMD }}>
                 {item.imgs.map((k) => (
-                  <a key={k} href={resolveImg(k)} target="_blank" rel="noopener noreferrer">
-                    <img
-                      src={resolveImg(k)}
-                      alt=""
-                      style={{ maxWidth: 200, maxHeight: 200, objectFit: "cover", borderRadius: 6 }}
-                    />
-                  </a>
+                  <Image
+                    key={k}
+                    src={resolveImg(k)}
+                    alt=""
+                    width={200}
+                    height={200}
+                    style={{ objectFit: "cover", borderRadius: token.borderRadius }}
+                    preview={{ src: resolveImg(k) }}
+                  />
                 ))}
-              </div>
+              </Flex>
             )}
           </Card>
         ))}
-      </div>
+      </Flex>
       <ListPagination page={page} setPage={setPage} total={total} pageSize={pageSize} />
     </div>
   );

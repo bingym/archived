@@ -1,6 +1,9 @@
-import { Button } from "antd";
+import { Button, List, Typography } from "antd";
+import { AudioOutlined, DeleteOutlined, EditOutlined } from "@ant-design/icons";
 import type { PodcastItem } from "./types";
 import ListPagination from "./ListPagination";
+
+const { Link, Text } = Typography;
 
 interface Props {
   podcasts: PodcastItem[];
@@ -25,29 +28,36 @@ export default function PersonPodcastsTab({
 }: Props) {
   return (
     <div>
-      <ul>
-        {podcasts.map((item) => (
-          <li key={item.id} style={{ marginBottom: 12 }} className="flex items-center gap-2">
-            {item.url ? (
-              <a href={item.url} target="_blank" rel="noopener noreferrer" className="text-blue-700 underline font-bold">
-                {item.title}
-              </a>
-            ) : (
-              <span className="font-bold">{item.title}</span>
-            )}
-            {authed && (
-              <>
-                <Button size="small" onClick={() => onEdit(item)}>
-                  编辑
-                </Button>
-                <Button size="small" danger onClick={() => onDelete(item)}>
-                  ×
-                </Button>
-              </>
-            )}
-          </li>
-        ))}
-      </ul>
+      <List
+        itemLayout="horizontal"
+        dataSource={podcasts}
+        locale={{ emptyText: "暂无播客" }}
+        renderItem={(item) => (
+          <List.Item
+            actions={
+              authed
+                ? [
+                    <Button key="edit" type="text" size="small" icon={<EditOutlined />} onClick={() => onEdit(item)} />,
+                    <Button key="del" type="text" size="small" danger icon={<DeleteOutlined />} onClick={() => onDelete(item)} />,
+                  ]
+                : []
+            }
+          >
+            <List.Item.Meta
+              title={
+                item.url ? (
+                  <Link href={item.url} target="_blank" rel="noopener noreferrer">
+                    <AudioOutlined style={{ marginRight: 6 }} />
+                    {item.title}
+                  </Link>
+                ) : (
+                  <Text strong>{item.title}</Text>
+                )
+              }
+            />
+          </List.Item>
+        )}
+      />
       <ListPagination page={page} setPage={setPage} total={total} pageSize={pageSize} />
     </div>
   );

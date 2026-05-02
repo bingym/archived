@@ -1,6 +1,8 @@
 import { useState } from "react";
-import { Button, Input, Modal, Typography } from "antd";
+import { Button, Flex, Form, Input, Modal, Space, Typography } from "antd";
 import { setToken, useAuthToken } from "../auth";
+
+const { Text } = Typography;
 
 export default function LoginButton() {
   const token = useAuthToken();
@@ -9,8 +11,8 @@ export default function LoginButton() {
 
   if (token) {
     return (
-      <Button type="text" size="small" onClick={() => setToken(null)}>
-        Logout
+      <Button onClick={() => setToken(null)}>
+        退出登录
       </Button>
     );
   }
@@ -23,41 +25,44 @@ export default function LoginButton() {
 
   return (
     <>
-      <Button
-        type="primary"
-        size="small"
-        onClick={() => {
-          setInput("");
-          setOpen(true);
-        }}
-      >
-        Login
+      <Button type="primary" onClick={() => { setInput(""); setOpen(true); }}>
+        登录
       </Button>
       <Modal
-        title="Admin login"
+        title="管理员登录"
         open={open}
         onCancel={() => setOpen(false)}
-        footer={[
-          <Button key="cancel" onClick={() => setOpen(false)}>
-            取消
-          </Button>,
-          <Button key="ok" type="primary" disabled={!input.trim()} onClick={submit}>
-            登录
-          </Button>,
-        ]}
         destroyOnClose
         zIndex={2000}
+        maskClosable
+        footer={
+          <Flex justify="flex-end">
+            <Space>
+              <Button onClick={() => setOpen(false)}>取消</Button>
+              <Button type="primary" disabled={!input.trim()} onClick={submit}>
+                登录
+              </Button>
+            </Space>
+          </Flex>
+        }
       >
-        <Typography.Paragraph type="secondary" style={{ marginBottom: 12 }}>
-          输入 ADMIN_TOKEN 以解锁编辑功能。
-        </Typography.Paragraph>
-        <Input.Password
-          placeholder="ADMIN_TOKEN"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          autoFocus
-          onPressEnter={submit}
-        />
+        <Form layout="vertical" requiredMark={false} style={{ marginTop: 8 }}>
+          <Text type="secondary" style={{ display: "block", marginBottom: 16 }}>
+            输入 ADMIN_TOKEN 以解锁编辑功能。
+          </Text>
+          <Form.Item
+            label="Token"
+            extra={<Text type="secondary" style={{ fontSize: 12 }}>仅存储在本地浏览器，不会上传到除本站点 API 以外的地址。</Text>}
+          >
+            <Input.Password
+              placeholder="ADMIN_TOKEN"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              autoFocus
+              onPressEnter={submit}
+            />
+          </Form.Item>
+        </Form>
       </Modal>
     </>
   );

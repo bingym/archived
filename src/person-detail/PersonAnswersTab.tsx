@@ -1,7 +1,10 @@
-import { Button, Card } from "antd";
+import { Button, Card, Flex, List, Typography, theme } from "antd";
+import { DeleteOutlined, EditOutlined } from "@ant-design/icons";
 import type { AnswerItem } from "./types";
 import { formatDatetime } from "./utils";
 import ListPagination from "./ListPagination";
+
+const { Text, Title } = Typography;
 
 interface Props {
   answers: AnswerItem[];
@@ -24,31 +27,38 @@ export default function PersonAnswersTab({
   onEdit,
   onDelete,
 }: Props) {
+  const { token } = theme.useToken();
   return (
     <div>
-      <ul>
-        {answers.map((item) => (
-          <li key={item.id} className="mb-4">
-            <Card styles={{ body: { padding: 16 } }}>
-              <div className="flex items-center justify-between">
-                <div className="text-xs text-gray-400 mb-1">{formatDatetime(item.datetime)}</div>
+      <List
+        itemLayout="vertical"
+        dataSource={answers}
+        locale={{ emptyText: "暂无问答" }}
+        renderItem={(item) => (
+          <List.Item style={{ paddingBlock: token.paddingMD, borderBlockEnd: `1px solid ${token.colorSplit}` }}>
+            <Card size="small" styles={{ body: { padding: token.paddingLG } }}>
+              <Flex justify="space-between" align="flex-start" gap={token.marginSM} wrap="wrap">
+                <Text type="secondary" style={{ fontSize: token.fontSizeSM }}>
+                  {formatDatetime(item.datetime)}
+                </Text>
                 {authed && (
-                  <div className="flex gap-1">
-                    <Button size="small" onClick={() => onEdit(item)}>
-                      编辑
-                    </Button>
-                    <Button size="small" danger onClick={() => onDelete(item)}>
-                      ×
-                    </Button>
-                  </div>
+                  <Flex gap={token.marginXXS}>
+                    <Button type="text" size="small" icon={<EditOutlined />} onClick={() => onEdit(item)} />
+                    <Button type="text" size="small" danger icon={<DeleteOutlined />} onClick={() => onDelete(item)} />
+                  </Flex>
                 )}
-              </div>
-              <div className="font-bold mb-2">Q: {item.question}</div>
-              <div className="text-base whitespace-pre-wrap" dangerouslySetInnerHTML={{ __html: item.content ?? "" }} />
+              </Flex>
+              <Title level={5} style={{ marginTop: token.marginSM, marginBottom: token.marginXS }}>
+                Q: {item.question}
+              </Title>
+              <div
+                style={{ fontSize: token.fontSize, lineHeight: token.lineHeight }}
+                dangerouslySetInnerHTML={{ __html: item.content ?? "" }}
+              />
             </Card>
-          </li>
-        ))}
-      </ul>
+          </List.Item>
+        )}
+      />
       <ListPagination page={page} setPage={setPage} total={total} pageSize={pageSize} />
     </div>
   );

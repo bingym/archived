@@ -1,4 +1,4 @@
-import { Pagination } from "antd";
+import { Flex, Pagination, theme } from "antd";
 
 export interface ListPaginationProps {
   page: number;
@@ -8,8 +8,9 @@ export interface ListPaginationProps {
 }
 
 export default function ListPagination({ page, setPage, total, pageSize }: ListPaginationProps) {
+  const { token } = theme.useToken();
   return (
-    <div className="flex justify-center my-4">
+    <Flex justify="center" style={{ marginTop: token.marginLG, marginBottom: token.marginMD }}>
       <Pagination
         current={page}
         total={total}
@@ -19,6 +20,6 @@ export default function ListPagination({ page, setPage, total, pageSize }: ListP
         hideOnSinglePage
         showLessItems
       />
-    </div>
+    </Flex>
   );
 }

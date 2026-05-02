@@ -1,14 +1,14 @@
 import { lazy, Suspense, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Avatar, Button, List, Modal, Typography } from "antd";
-import {EditOutlined, DeleteOutlined, UserOutlined } from "@ant-design/icons";
+import { Avatar, Button, Card, Divider, Empty, Flex, Modal, Typography, theme } from "antd";
+import { DeleteOutlined, EditOutlined, PlusOutlined, RightOutlined, UserOutlined } from "@ant-design/icons";
 import type { PersonForm } from "../components/PersonEditor";
 import { apiFetch, useIsAuthed } from "../auth";
 import { resolveImg } from "../lib/img";
 
 const PersonEditor = lazy(() => import("../components/PersonEditor"));
 
-const { Text } = Typography;
+const { Title, Text } = Typography;
 
 interface PersonInfo {
   id: string;
@@ -18,6 +18,7 @@ interface PersonInfo {
 }
 
 export default function PeopleListPage() {
+  const { token } = theme.useToken();
   const authed = useIsAuthed();
   const [people, setPeople] = useState<PersonInfo[]>([]);
   const [editor, setEditor] = useState<{ mode: "create" | "edit"; initial?: PersonInfo } | null>(null);
@@ -56,59 +57,59 @@ export default function PeopleListPage() {
     });
   };
 
+  const rowPadding = `${token.paddingContentVerticalSM}px ${token.paddingLG}px`;
+
   return (
-    <div className="main-center-wrapper w-full justify-center">
-      <div className="w-1/2 mx-auto mt-8 px-4">
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl font-bold">People</h1>
-          {authed && (
-            <Button type="primary" size="small" onClick={() => setEditor({ mode: "create" })}>
-              + 新建
-            </Button>
-          )}
-        </div>
-        <List
-          bordered
-          style={{ background: "#fff", borderRadius: 8, overflow: "hidden" }}
-          dataSource={people}
-          locale={{ emptyText: "暂无数据" }}
-          renderItem={(person) => (
-            <List.Item
-              actions={[
-                ...(authed
-                  ? [
-                      <Button key="edit" type="link" size="small" icon={<EditOutlined />} onClick={() => setEditor({ mode: "edit", initial: person })}>
-                      </Button>,
-                      <Button key="del" type="link" size="small" danger icon={<DeleteOutlined />} onClick={() => void onDelete(person)}>
-                      </Button>,
-                    ]
-                  : []),
-                <Link key="go" to={`/people/${person.id}`}>
-                  <Button type="primary" size="small" >
-                    Go
-                  </Button>
-                </Link>,
-              ]}
-            >
-              <List.Item.Meta
-                avatar={
-                  person.avatar ? (
+    <div style={{ maxWidth: 960, margin: "0 auto" }}>
+      <Flex justify="space-between" align="center" style={{ marginBottom: 24 }}>
+        <Title level={3} style={{ margin: 0 }}>
+          人物
+        </Title>
+        {authed && (
+          <Button type="primary" icon={<PlusOutlined />} onClick={() => setEditor({ mode: "create" })}>
+            新建人物
+          </Button>
+        )}
+      </Flex>
+      <Card styles={{ body: { padding: 0 } }}>
+        {people.length === 0 ? (
+          <Empty style={{ padding: token.paddingXL }} description="暂无数据" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+        ) : (
+          people.map((person, index) => (
+            <div key={person.id}>
+              {index > 0 && <Divider style={{ margin: 0 }} />}
+              <Flex align="center" justify="space-between" gap={token.marginMD} wrap="wrap" style={{ padding: rowPadding }}>
+                <Flex align="center" gap={token.marginMD} style={{ flex: 1, minWidth: 0 }}>
+                  {person.avatar ? (
                     <Avatar src={resolveImg(person.avatar)} alt={person.name} size={56} />
                   ) : (
                     <Avatar size={56} icon={<UserOutlined />} />
-                  )
-                }
-                title={<span className="text-lg font-semibold">{person.name}</span>}
-                description={
-                  <Text type="secondary" className="max-w-xs line-clamp-2 block">
-                    {person.description}
-                  </Text>
-                }
-              />
-            </List.Item>
-          )}
-        />
-      </div>
+                  )}
+                  <Flex vertical gap={token.marginXXS} style={{ minWidth: 0 }}>
+                    <Text strong>{person.name}</Text>
+                    <Text type="secondary" ellipsis={{ tooltip: person.description ?? undefined }} style={{ maxWidth: 480 }}>
+                      {person.description}
+                    </Text>
+                  </Flex>
+                </Flex>
+                <Flex align="center" gap={token.marginXXS} wrap="wrap" style={{ flexShrink: 0 }}>
+                  {authed && (
+                    <>
+                      <Button type="text" icon={<EditOutlined />} aria-label="编辑" onClick={() => setEditor({ mode: "edit", initial: person })} />
+                      <Button type="text" danger icon={<DeleteOutlined />} aria-label="删除" onClick={() => void onDelete(person)} />
+                    </>
+                  )}
+                  <Link to={`/people/${person.id}/info`}>
+                    <Button type="link" icon={<RightOutlined />} iconPosition="end">
+                      查看
+                    </Button>
+                  </Link>
+                </Flex>
+              </Flex>
+            </div>
+          ))
+        )}
+      </Card>
       {editor && (
         <Suspense fallback={null}>
           <PersonEditor

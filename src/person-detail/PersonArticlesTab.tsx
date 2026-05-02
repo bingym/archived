@@ -1,7 +1,10 @@
 import { useState } from "react";
-import { Button, Modal, Typography } from "antd";
+import { Button, List, Modal, Typography, theme } from "antd";
+import { DeleteOutlined, EditOutlined } from "@ant-design/icons";
 import type { ArticleItem } from "./types";
 import ListPagination from "./ListPagination";
+
+const { Paragraph } = Typography;
 
 interface Props {
   articles: ArticleItem[];
@@ -24,49 +27,57 @@ export default function PersonArticlesTab({
   onEdit,
   onDelete,
 }: Props) {
+  const { token } = theme.useToken();
   const [modalContent, setModalContent] = useState<string | null>(null);
 
   return (
     <div>
-      <ul>
-        {articles.map((item) => {
+      <List
+        itemLayout="horizontal"
+        dataSource={articles}
+        locale={{ emptyText: "暂无文章" }}
+        renderItem={(item) => {
           const firstLine = ((item.content ?? "").split("\n")[0] || item.title).replace(/^#+\s*/, "") || item.title;
           return (
-            <li key={item.id} style={{ marginBottom: 16 }} className="flex items-center gap-2">
-              <button
-                type="button"
-                className="text-blue-700 underline font-bold hover:text-blue-900 bg-transparent border-0 cursor-pointer p-0 font-inherit"
-                onClick={() => setModalContent(item.content ?? "")}
-              >
-                {firstLine}
-              </button>
-              {authed && (
-                <>
-                  <Button size="small" onClick={() => onEdit(item)}>
-                    编辑
+            <List.Item
+              actions={
+                authed
+                  ? [
+                      <Button key="edit" type="text" size="small" icon={<EditOutlined />} onClick={() => onEdit(item)} />,
+                      <Button key="del" type="text" size="small" danger icon={<DeleteOutlined />} onClick={() => onDelete(item)} />,
+                    ]
+                  : []
+              }
+            >
+              <List.Item.Meta
+                title={
+                  <Button
+                    type="link"
+                    onClick={() => setModalContent(item.content ?? "")}
+                    style={{ padding: 0, height: "auto", fontWeight: token.fontWeightStrong }}
+                  >
+                    {firstLine}
                   </Button>
-                  <Button size="small" danger onClick={() => onDelete(item)}>
-                    ×
-                  </Button>
-                </>
-              )}
-            </li>
+                }
+              />
+            </List.Item>
           );
-        })}
-      </ul>
+        }}
+      />
       <Modal
         open={modalContent !== null}
         onCancel={() => setModalContent(null)}
         footer={null}
-        width="80vw"
-        style={{ top: 40 }}
+        width={960}
+        style={{ top: 48 }}
         zIndex={1000}
         title="正文"
         destroyOnClose
+        maskClosable
       >
-        <Typography.Paragraph style={{ whiteSpace: "pre-wrap", marginBottom: 0 }}>
+        <Paragraph style={{ whiteSpace: "pre-wrap", marginBottom: 0, maxHeight: "70vh", overflow: "auto" }}>
           {modalContent ?? ""}
-        </Typography.Paragraph>
+        </Paragraph>
       </Modal>
       <ListPagination page={page} setPage={setPage} total={total} pageSize={pageSize} />
     </div>
