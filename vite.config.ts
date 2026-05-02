@@ -6,6 +6,7 @@ import { fileURLToPath, URL } from 'node:url'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  base: './',
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src',
@@ -17,7 +18,11 @@ export default defineConfig({
     port: 5178,
     proxy: {
       '/api': {
-        target: 'http://localhost:8088',
+        target: 'http://localhost:8787',
+        changeOrigin: true,
+      },
+      '/r2': {
+        target: 'http://localhost:8787',
         changeOrigin: true,
       }
     }

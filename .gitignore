@@ -25,3 +25,11 @@ dist-ssr
 
 raw-data/
 archived
+
+# Cloudflare
+.wrangler/
+.dev.vars
+
+# Ad-hoc SQL emitted by import scripts
+scripts/generated/
+data/
