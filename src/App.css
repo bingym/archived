@@ -1,0 +1,18 @@
+@import "tailwindcss";
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  width: 100%;
+}
+
+#root {
+  min-height: 100%;
+}
+
+/* Tabs 仅作导航，正文在下方单独渲染 */
+.person-detail-tabs-nav-only .ant-tabs-content-holder {
+  display: none;
+}

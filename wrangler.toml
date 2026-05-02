@@ -1,0 +1,17 @@
+name = "archived"
+main = "worker/index.ts"
+compatibility_date = "2026-01-01"
+
+[assets]
+directory = "./dist"
+not_found_handling = "single-page-application"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "archived"
+database_id = "8f27eac9-4848-43f0-90f2-9d053cff7341"
+migrations_dir = "migrations"
+
+[[r2_buckets]]
+binding = "R2"
+bucket_name = "archived"
