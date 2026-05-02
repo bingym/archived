@@ -1,4 +1,6 @@
 import { useRef, useState } from "react";
+import { Button, Typography } from "antd";
+import { CloseOutlined } from "@ant-design/icons";
 import { deleteImage, isR2Key, resolveImg, uploadImage } from "../lib/img";
 
 interface Props {
@@ -50,18 +52,20 @@ export default function ImageMultiUpload({ value, onChange, label, size = 96, ma
         {value.map((k) => (
           <div
             key={k}
-            className="relative rounded border bg-base-200 overflow-hidden"
+            className="relative rounded border overflow-hidden bg-[#f5f5f5]"
             style={{ width: size, height: size }}
           >
             <img src={resolveImg(k)} alt="" style={{ width: size, height: size, objectFit: "cover" }} />
-            <button
-              type="button"
-              className="btn btn-xs btn-circle btn-error absolute top-1 right-1"
+            <Button
+              type="primary"
+              danger
+              shape="circle"
+              size="small"
+              icon={<CloseOutlined />}
+              style={{ position: "absolute", top: 4, right: 4, minWidth: 24, width: 24, height: 24, padding: 0 }}
               onClick={() => void handleRemove(k)}
               title="删除"
-            >
-              ✕
-            </button>
+            />
           </div>
         ))}
         {canAdd && (
@@ -91,7 +95,7 @@ export default function ImageMultiUpload({ value, onChange, label, size = 96, ma
           </>
         )}
       </div>
-      {error && <div className="text-sm text-red-600">{error}</div>}
+      {error && <Typography.Text type="danger">{error}</Typography.Text>}
     </div>
   );
 }

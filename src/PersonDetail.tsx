@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams, Link } from "react-router-dom";
+import { Button, Card, Modal, Pagination, Spin, Tabs, Typography } from "antd";
 import { apiFetch, useIsAuthed } from "./auth";
 import { resolveImg } from "./lib/img";
 import ItemEditor, { type ItemKind } from "./components/ItemEditor";
@@ -144,6 +145,25 @@ export default function PersonDetail() {
     return list;
   }, [person, authed]);
 
+  const tabItemsConfig = useMemo(
+    () =>
+      dynamicTabList.map((t) => ({
+        key: t.key,
+        label: (
+          <>
+            {t.label}
+            {t.count > 0 && (
+              <Typography.Text type="secondary" className="ml-1 text-xs">
+                ({t.count})
+              </Typography.Text>
+            )}
+          </>
+        ),
+        children: <span />,
+      })),
+    [dynamicTabList]
+  );
+
   if (!person) {
     return (
       <div className="main-center-wrapper">
@@ -183,11 +203,11 @@ export default function PersonDetail() {
         </Link>
         <div className="flex items-center mb-8">
           <div className="avatar">
-            <div className="w-24 rounded">
+            <div className="w-24 rounded overflow-hidden bg-[#f5f5f5]">
               {person.avatar ? (
                 <img src={resolveImg(person.avatar)} alt={person.name} />
               ) : (
-                <div className="w-24 h-24 bg-base-200" />
+                <div className="w-24 h-24 bg-[#f5f5f5]" />
               )}
             </div>
           </div>
@@ -195,40 +215,34 @@ export default function PersonDetail() {
             <h1 style={{ marginBottom: 8 }}>{person.name}</h1>
           </div>
           {authed && (
-            <button className="btn btn-sm" onClick={() => setPersonEditorOpen(true)}>
+            <Button size="small" onClick={() => setPersonEditorOpen(true)}>
               编辑信息
-            </button>
+            </Button>
           )}
         </div>
-        <div role="tablist" className="tabs tabs-border mb-6">
-          {dynamicTabList.map((t) => (
-            <a
-              role="tab"
-              key={t.key}
-              className={`tab${tab === t.key ? " tab-active" : ""}`}
-              onClick={() => {
-                setPage(1);
-                setTab(t.key);
-              }}
-            >
-              {t.label}
-              {t.count > 0 && <span className="ml-1 text-xs text-gray-400">({t.count})</span>}
-            </a>
-          ))}
-        </div>
+        <Tabs
+          className="person-detail-tabs-nav-only mb-6"
+          activeKey={tab}
+          onChange={(k) => {
+            setPage(1);
+            setTab(k as TabKey);
+          }}
+          items={tabItemsConfig}
+        />
         {authed && itemKindForTab && (
           <div className="mb-4">
-            <button
-              className="btn btn-sm btn-primary"
-              onClick={() => setEditor({ kind: itemKindForTab, initial: null })}
-            >
+            <Button type="primary" size="small" onClick={() => setEditor({ kind: itemKindForTab, initial: null })}>
               + 新增
-            </button>
+            </Button>
           </div>
         )}
 
         <div>
-          {showTabSpinner && <div className="text-sm text-gray-500 mb-4">加载中...</div>}
+          {showTabSpinner && (
+            <div className="text-sm text-gray-500 mb-4">
+              <Spin size="small" /> 加载中...
+            </div>
+          )}
 
           {tab === "info" && (
             <div>
@@ -256,18 +270,15 @@ export default function PersonDetail() {
                   >
                     {authed && (
                       <div className="absolute top-1 right-1 flex gap-1">
-                        <button
-                          className="btn btn-xs"
+                        <Button
+                          size="small"
                           onClick={() => setEditor({ kind: "books", initial: item as unknown as Record<string, unknown> })}
                         >
                           编辑
-                        </button>
-                        <button
-                          className="btn btn-xs btn-error"
-                          onClick={() => void onDeleteItem("books", item.id)}
-                        >
+                        </Button>
+                        <Button size="small" danger onClick={() => void onDeleteItem("books", item.id)}>
                           ×
-                        </button>
+                        </Button>
                       </div>
                     )}
                     {item.cover && (
@@ -292,7 +303,7 @@ export default function PersonDetail() {
                   </div>
                 ))}
               </div>
-              <Pagination page={page} setPage={setPage} total={tabTotal} pageSize={PAGE_SIZE} />
+              <ListPagination page={page} setPage={setPage} total={tabTotal} pageSize={PAGE_SIZE} />
             </div>
           )}
 
@@ -304,7 +315,7 @@ export default function PersonDetail() {
                 onEdit={(item) => setEditor({ kind: "articles", initial: item as unknown as Record<string, unknown> })}
                 onDelete={(item) => void onDeleteItem("articles", item.id)}
               />
-              <Pagination page={page} setPage={setPage} total={tabTotal} pageSize={PAGE_SIZE} />
+              <ListPagination page={page} setPage={setPage} total={tabTotal} pageSize={PAGE_SIZE} />
             </div>
           )}
 
@@ -322,14 +333,14 @@ export default function PersonDetail() {
                     )}
                     {authed && (
                       <>
-                        <button className="btn btn-xs" onClick={() => setEditor({ kind: "videos", initial: item as unknown as Record<string, unknown> })}>编辑</button>
-                        <button className="btn btn-xs btn-error" onClick={() => void onDeleteItem("videos", item.id)}>×</button>
+                        <Button size="small" onClick={() => setEditor({ kind: "videos", initial: item as unknown as Record<string, unknown> })}>编辑</Button>
+                        <Button size="small" danger onClick={() => void onDeleteItem("videos", item.id)}>×</Button>
                       </>
                     )}
                   </li>
                 ))}
               </ul>
-              <Pagination page={page} setPage={setPage} total={tabTotal} pageSize={PAGE_SIZE} />
+              <ListPagination page={page} setPage={setPage} total={tabTotal} pageSize={PAGE_SIZE} />
             </div>
           )}
 
@@ -347,52 +358,50 @@ export default function PersonDetail() {
                     )}
                     {authed && (
                       <>
-                        <button className="btn btn-xs" onClick={() => setEditor({ kind: "podcasts", initial: item as unknown as Record<string, unknown> })}>编辑</button>
-                        <button className="btn btn-xs btn-error" onClick={() => void onDeleteItem("podcasts", item.id)}>×</button>
+                        <Button size="small" onClick={() => setEditor({ kind: "podcasts", initial: item as unknown as Record<string, unknown> })}>编辑</Button>
+                        <Button size="small" danger onClick={() => void onDeleteItem("podcasts", item.id)}>×</Button>
                       </>
                     )}
                   </li>
                 ))}
               </ul>
-              <Pagination page={page} setPage={setPage} total={tabTotal} pageSize={PAGE_SIZE} />
+              <ListPagination page={page} setPage={setPage} total={tabTotal} pageSize={PAGE_SIZE} />
             </div>
           )}
 
           {tab === "twitter" && !tabLoading && (
             <div>
               {tweets.map((item) => (
-                <div key={item.id} className="card card-border bg-base-100 mb-4 relative">
-                  <div className="card-body p-4">
-                    <div className="flex items-center justify-between">
-                      <div className="text-xs text-gray-400 mb-1">{item.datetime}</div>
-                      {authed && (
-                        <div className="flex gap-1">
-                          <button className="btn btn-xs" onClick={() => setEditor({ kind: "tweets", initial: item as unknown as Record<string, unknown> })}>编辑</button>
-                          <button className="btn btn-xs btn-error" onClick={() => void onDeleteItem("tweets", item.id)}>×</button>
-                        </div>
-                      )}
-                    </div>
-                    <div
-                      className="text-base whitespace-pre-wrap"
-                      dangerouslySetInnerHTML={{ __html: item.content ?? "" }}
-                    />
-                    {item.imgs && item.imgs.length > 0 && (
-                      <div className="flex flex-wrap gap-2 mt-2">
-                        {item.imgs.map((k) => (
-                          <a key={k} href={resolveImg(k)} target="_blank" rel="noopener noreferrer">
-                            <img
-                              src={resolveImg(k)}
-                              alt=""
-                              style={{ maxWidth: 200, maxHeight: 200, objectFit: "cover", borderRadius: 6 }}
-                            />
-                          </a>
-                        ))}
+                <Card key={item.id} className="mb-4 relative" styles={{ body: { padding: 16 } }}>
+                  <div className="flex items-center justify-between">
+                    <div className="text-xs text-gray-400 mb-1">{item.datetime}</div>
+                    {authed && (
+                      <div className="flex gap-1">
+                        <Button size="small" onClick={() => setEditor({ kind: "tweets", initial: item as unknown as Record<string, unknown> })}>编辑</Button>
+                        <Button size="small" danger onClick={() => void onDeleteItem("tweets", item.id)}>×</Button>
                       </div>
                     )}
                   </div>
-                </div>
+                  <div
+                    className="text-base whitespace-pre-wrap"
+                    dangerouslySetInnerHTML={{ __html: item.content ?? "" }}
+                  />
+                  {item.imgs && item.imgs.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {item.imgs.map((k) => (
+                        <a key={k} href={resolveImg(k)} target="_blank" rel="noopener noreferrer">
+                          <img
+                            src={resolveImg(k)}
+                            alt=""
+                            style={{ maxWidth: 200, maxHeight: 200, objectFit: "cover", borderRadius: 6 }}
+                          />
+                        </a>
+                      ))}
+                    </div>
+                  )}
+                </Card>
               ))}
-              <Pagination page={page} setPage={setPage} total={tabTotal} pageSize={PAGE_SIZE} />
+              <ListPagination page={page} setPage={setPage} total={tabTotal} pageSize={PAGE_SIZE} />
             </div>
           )}
 
@@ -400,14 +409,14 @@ export default function PersonDetail() {
             <div>
               <ul>
                 {answers.map((item) => (
-                  <li key={item.id} className="mb-4 card card-border bg-base-100">
-                    <div className="card-body p-4">
+                  <li key={item.id} className="mb-4">
+                    <Card styles={{ body: { padding: 16 } }}>
                       <div className="flex items-center justify-between">
                         <div className="text-xs text-gray-400 mb-1">{formatDatetime(item.datetime)}</div>
                         {authed && (
                           <div className="flex gap-1">
-                            <button className="btn btn-xs" onClick={() => setEditor({ kind: "answers", initial: item as unknown as Record<string, unknown> })}>编辑</button>
-                            <button className="btn btn-xs btn-error" onClick={() => void onDeleteItem("answers", item.id)}>×</button>
+                            <Button size="small" onClick={() => setEditor({ kind: "answers", initial: item as unknown as Record<string, unknown> })}>编辑</Button>
+                            <Button size="small" danger onClick={() => void onDeleteItem("answers", item.id)}>×</Button>
                           </div>
                         )}
                       </div>
@@ -416,11 +425,11 @@ export default function PersonDetail() {
                         className="text-base whitespace-pre-wrap"
                         dangerouslySetInnerHTML={{ __html: item.content ?? "" }}
                       />
-                    </div>
+                    </Card>
                   </li>
                 ))}
               </ul>
-              <Pagination page={page} setPage={setPage} total={tabTotal} pageSize={PAGE_SIZE} />
+              <ListPagination page={page} setPage={setPage} total={tabTotal} pageSize={PAGE_SIZE} />
             </div>
           )}
         </div>
@@ -464,22 +473,24 @@ const formatDatetime = (dt: string | null | undefined) => {
   return dt;
 };
 
-interface PaginationProps {
+interface ListPaginationProps {
   page: number;
   setPage: (n: number) => void;
   total: number;
   pageSize: number;
 }
-function Pagination({ page, setPage, total, pageSize }: PaginationProps) {
-  const pageCount = Math.ceil(total / pageSize);
-  if (pageCount <= 1) return null;
+function ListPagination({ page, setPage, total, pageSize }: ListPaginationProps) {
   return (
     <div className="flex justify-center my-4">
-      <div className="join">
-        <button className="join-item btn btn-sm" disabled={page === 1} onClick={() => setPage(page - 1)}>«</button>
-        <button className="join-item btn btn-sm btn-active">{page}/{pageCount}</button>
-        <button className="join-item btn btn-sm" disabled={page === pageCount} onClick={() => setPage(page + 1)}>»</button>
-      </div>
+      <Pagination
+        current={page}
+        total={total}
+        pageSize={pageSize}
+        onChange={setPage}
+        showSizeChanger={false}
+        hideOnSinglePage
+        showLessItems
+      />
     </div>
   );
 }
@@ -505,32 +516,36 @@ function ArticleList({
           return (
             <li key={item.id} style={{ marginBottom: 16 }} className="flex items-center gap-2">
               <button
-                className="text-blue-700 underline font-bold hover:text-blue-900"
+                type="button"
+                className="text-blue-700 underline font-bold hover:text-blue-900 bg-transparent border-0 cursor-pointer p-0 font-inherit"
                 onClick={() => setModalContent(item.content ?? "")}
               >
                 {firstLine}
               </button>
               {authed && (
                 <>
-                  <button className="btn btn-xs" onClick={() => onEdit(item)}>编辑</button>
-                  <button className="btn btn-xs btn-error" onClick={() => onDelete(item)}>×</button>
+                  <Button size="small" onClick={() => onEdit(item)}>编辑</Button>
+                  <Button size="small" danger onClick={() => onDelete(item)}>×</Button>
                 </>
               )}
             </li>
           );
         })}
       </ul>
-      {modalContent !== null && (
-        <div className="modal modal-open" style={{ zIndex: 1000 }}>
-          <div className="modal-box whitespace-pre-wrap" style={{ width: "80vw", maxWidth: "80vw" }}>
-            <label className="btn btn-sm btn-circle absolute right-2 top-2" onClick={() => setModalContent(null)}>
-              ✕
-            </label>
-            <div style={{ whiteSpace: "pre-wrap" }}>{modalContent}</div>
-          </div>
-          <label className="modal-backdrop" onClick={() => setModalContent(null)} />
-        </div>
-      )}
+      <Modal
+        open={modalContent !== null}
+        onCancel={() => setModalContent(null)}
+        footer={null}
+        width="80vw"
+        style={{ top: 40 }}
+        zIndex={1000}
+        title="正文"
+        destroyOnClose
+      >
+        <Typography.Paragraph style={{ whiteSpace: "pre-wrap", marginBottom: 0 }}>
+          {modalContent ?? ""}
+        </Typography.Paragraph>
+      </Modal>
     </div>
   );
 }

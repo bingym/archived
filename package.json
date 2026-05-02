@@ -21,7 +21,8 @@
     "import:wangxing-tweets": "node scripts/import-wangxing-tweets.mjs"
   },
   "dependencies": {
-    "daisyui": "^5.0.46",
+    "@ant-design/icons": "^6.2.2",
+    "antd": "^6.3.7",
     "hono": "^4.6.13",
     "p-limit": "^7.3.0",
     "react": "^19.1.0",

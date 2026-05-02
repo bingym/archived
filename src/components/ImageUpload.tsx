@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import { Button, Typography } from "antd";
 import { resolveImg, uploadImage, type UploadPrefix } from "../lib/img";
 
 interface Props {
@@ -33,7 +34,7 @@ export default function ImageUpload({ value, onChange, prefix, label, size = 96,
       {label && <span className="text-sm font-semibold text-gray-700">{label}</span>}
       <div className="flex items-center gap-3">
         <div
-          className="rounded border bg-base-200 overflow-hidden flex items-center justify-center"
+          className="rounded border overflow-hidden flex items-center justify-center bg-[#f5f5f5]"
           style={{ width: size, height: size }}
         >
           {value ? (
@@ -43,7 +44,9 @@ export default function ImageUpload({ value, onChange, prefix, label, size = 96,
               style={{ width: size, height: size, objectFit: "cover" }}
             />
           ) : (
-            <span className="text-xs text-gray-400">无图</span>
+            <Typography.Text type="secondary" className="text-xs">
+              无图
+            </Typography.Text>
           )}
         </div>
         <div className="flex flex-col gap-1">
@@ -58,27 +61,17 @@ export default function ImageUpload({ value, onChange, prefix, label, size = 96,
               e.target.value = "";
             }}
           />
-          <button
-            type="button"
-            className="btn btn-sm"
-            disabled={uploading}
-            onClick={() => inputRef.current?.click()}
-          >
+          <Button type="default" size="small" disabled={uploading} onClick={() => inputRef.current?.click()}>
             {uploading ? "上传中…" : value ? "替换" : "上传"}
-          </button>
+          </Button>
           {value && (
-            <button
-              type="button"
-              className="btn btn-sm btn-ghost"
-              disabled={uploading}
-              onClick={() => onChange(null)}
-            >
+            <Button type="link" size="small" disabled={uploading} onClick={() => onChange(null)} style={{ padding: 0, height: "auto" }}>
               移除
-            </button>
+            </Button>
           )}
         </div>
       </div>
-      {error && <div className="text-sm text-red-600">{error}</div>}
+      {error && <Typography.Text type="danger">{error}</Typography.Text>}
     </div>
   );
 }

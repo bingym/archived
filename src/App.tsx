@@ -1,11 +1,16 @@
 import { useEffect, useState } from "react";
 import { Routes, Route, Link } from "react-router-dom";
+import { Avatar, Button, Layout, List, Typography } from "antd";
+import { UserOutlined } from "@ant-design/icons";
 import "./App.css";
 import PersonDetail from "./PersonDetail";
 import LoginButton from "./components/LoginButton";
 import PersonEditor, { type PersonForm } from "./components/PersonEditor";
 import { apiFetch, useIsAuthed, useStorageSync } from "./auth";
 import { resolveImg } from "./lib/img";
+
+const { Header } = Layout;
+const { Text } = Typography;
 
 interface PersonInfo {
   id: string;
@@ -16,16 +21,28 @@ interface PersonInfo {
 
 function TopBar() {
   return (
-    <div className="navbar bg-base-100 shadow-sm sticky top-0 z-10">
-      <div className="flex-1">
-        <Link to="/people" className="btn btn-ghost text-lg">
+    <Header
+      style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        paddingInline: 24,
+        background: "#fff",
+        boxShadow: "0 1px 4px rgba(0,0,0,0.08)",
+        position: "sticky",
+        top: 0,
+        zIndex: 10,
+        height: 56,
+        lineHeight: "56px",
+      }}
+    >
+      <Link to="/people">
+        <Button type="text" size="large" style={{ fontSize: 18, fontWeight: 600 }}>
           Archived
-        </Link>
-      </div>
-      <div className="flex-none">
-        <LoginButton />
-      </div>
-    </div>
+        </Button>
+      </Link>
+      <LoginButton />
+    </Header>
   );
 }
 
@@ -60,58 +77,54 @@ function PeopleList() {
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-2xl font-bold">People</h1>
           {authed && (
-            <button
-              className="btn btn-sm btn-primary"
-              onClick={() => setEditor({ mode: "create" })}
-            >
+            <Button type="primary" size="small" onClick={() => setEditor({ mode: "create" })}>
               + 新建
-            </button>
+            </Button>
           )}
         </div>
-        <ul className="w-full mx-auto divide-y divide-gray-200 bg-base-100 rounded-box shadow">
-          {people.map((person) => (
-            <li key={person.id} className="flex items-center py-4 px-2">
-              <div className="flex-1 flex items-center gap-4">
-                {person.avatar ? (
-                  <img
-                    src={resolveImg(person.avatar)}
-                    alt={person.name}
-                    className="w-14 h-14 rounded-full object-cover border border-base-200"
-                  />
-                ) : (
-                  <div className="w-14 h-14 rounded-full bg-base-200" />
-                )}
-                <div>
-                  <div className="font-semibold text-lg">{person.name}</div>
-                  <div className="text-sm text-gray-500 line-clamp-2 max-w-xs">
+        <List
+          bordered
+          style={{ background: "#fff", borderRadius: 8, overflow: "hidden" }}
+          dataSource={people}
+          locale={{ emptyText: "暂无数据" }}
+          renderItem={(person) => (
+            <List.Item
+              actions={[
+                ...(authed
+                  ? [
+                      <Button key="edit" type="link" size="small" onClick={() => setEditor({ mode: "edit", initial: person })}>
+                        编辑
+                      </Button>,
+                      <Button key="del" type="link" size="small" danger onClick={() => void onDelete(person)}>
+                        删除
+                      </Button>,
+                    ]
+                  : []),
+                <Link key="go" to={`/people/${person.id}`}>
+                  <Button type="primary" size="small">
+                    Go
+                  </Button>
+                </Link>,
+              ]}
+            >
+              <List.Item.Meta
+                avatar={
+                  person.avatar ? (
+                    <Avatar src={resolveImg(person.avatar)} alt={person.name} size={56} />
+                  ) : (
+                    <Avatar size={56} icon={<UserOutlined />} />
+                  )
+                }
+                title={<span className="text-lg font-semibold">{person.name}</span>}
+                description={
+                  <Text type="secondary" className="max-w-xs line-clamp-2 block">
                     {person.description}
-                  </div>
-                </div>
-              </div>
-              <div className="ml-4 flex items-center gap-2">
-                {authed && (
-                  <>
-                    <button
-                      className="btn btn-sm btn-ghost"
-                      onClick={() => setEditor({ mode: "edit", initial: person })}
-                    >
-                      编辑
-                    </button>
-                    <button
-                      className="btn btn-sm btn-ghost text-red-600"
-                      onClick={() => void onDelete(person)}
-                    >
-                      删除
-                    </button>
-                  </>
-                )}
-                <Link to={`/people/${person.id}`} className="btn btn-primary btn-sm">
-                  Go
-                </Link>
-              </div>
-            </li>
-          ))}
-        </ul>
+                  </Text>
+                }
+              />
+            </List.Item>
+          )}
+        />
       </div>
       {editor && (
         <PersonEditor

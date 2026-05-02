@@ -1,5 +1,4 @@
 @import "tailwindcss";
-@plugin "daisyui";
 
 html, body{
   background: #e5e5e5;
@@ -15,6 +14,11 @@ html, body{
   display: flex;
   align-items: stretch;
   justify-content: stretch;
+}
+
+/* Tabs 仅作导航，正文在下方单独渲染 */
+.person-detail-tabs-nav-only .ant-tabs-content-holder {
+  display: none;
 }
 
 .container {

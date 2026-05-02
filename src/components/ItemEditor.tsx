@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Button, Input, Modal, Typography } from "antd";
 import { apiFetch } from "../auth";
 import ImageUpload from "./ImageUpload";
 import ImageMultiUpload from "./ImageMultiUpload";
@@ -125,71 +126,75 @@ export default function ItemEditor({ kind, personId, initial, onClose, onSaved }
   };
 
   return (
-    <div className="modal modal-open" style={{ zIndex: 1500 }}>
-      <div className="modal-box max-w-2xl">
-        <h3 className="font-bold text-lg mb-4">
-          {isEdit ? "编辑" : "新增"} {TITLES[kind]}
-        </h3>
-        <div className="flex flex-col gap-4 max-h-[70vh] overflow-y-auto pr-2">
-          {fields.map((f) => {
-            if (f.type === "image") {
-              return (
-                <ImageUpload
-                  key={f.key}
-                  label={f.label}
-                  prefix={kind === "books" ? "covers" : "avatars"}
-                  value={(state[f.key] as string | null) ?? null}
-                  onChange={(k) => setState((s) => ({ ...s, [f.key]: k }))}
-                />
-              );
-            }
-            if (f.type === "images") {
-              return (
-                <ImageMultiUpload
-                  key={f.key}
-                  label={f.label}
-                  value={(state[f.key] as string[]) ?? []}
-                  onChange={(keys) => setState((s) => ({ ...s, [f.key]: keys }))}
-                />
-              );
-            }
-            if (f.type === "textarea") {
-              return (
-                <label key={f.key} className="form-control">
-                  <span className="label-text mb-1">{f.label}</span>
-                  <textarea
-                    className="textarea textarea-bordered"
-                    rows={f.key === "content" ? 12 : 4}
-                    value={(state[f.key] as string) ?? ""}
-                    onChange={(e) => setState((s) => ({ ...s, [f.key]: e.target.value }))}
-                  />
-                </label>
-              );
-            }
+    <Modal
+      title={`${isEdit ? "编辑" : "新增"} ${TITLES[kind]}`}
+      open
+      onCancel={() => (saving ? undefined : onClose())}
+      width={720}
+      zIndex={1500}
+      styles={{ body: { maxHeight: "70vh", overflowY: "auto" } }}
+      footer={[
+        <Button key="cancel" onClick={onClose} disabled={saving}>
+          取消
+        </Button>,
+        <Button key="save" type="primary" loading={saving} onClick={() => void submit()}>
+          保存
+        </Button>,
+      ]}
+      maskClosable={!saving}
+    >
+      <div className="flex flex-col gap-4">
+        {fields.map((f) => {
+          if (f.type === "image") {
             return (
-              <label key={f.key} className="form-control">
-                <span className="label-text mb-1">{f.label}</span>
-                <input
-                  className="input input-bordered"
-                  type={f.type === "url" ? "url" : "text"}
+              <ImageUpload
+                key={f.key}
+                label={f.label}
+                prefix={kind === "books" ? "covers" : "avatars"}
+                value={(state[f.key] as string | null) ?? null}
+                onChange={(k) => setState((s) => ({ ...s, [f.key]: k }))}
+              />
+            );
+          }
+          if (f.type === "images") {
+            return (
+              <ImageMultiUpload
+                key={f.key}
+                label={f.label}
+                value={(state[f.key] as string[]) ?? []}
+                onChange={(keys) => setState((s) => ({ ...s, [f.key]: keys }))}
+              />
+            );
+          }
+          if (f.type === "textarea") {
+            return (
+              <div key={f.key}>
+                <Typography.Text strong className="block mb-1">
+                  {f.label}
+                </Typography.Text>
+                <Input.TextArea
+                  rows={f.key === "content" ? 12 : 4}
                   value={(state[f.key] as string) ?? ""}
                   onChange={(e) => setState((s) => ({ ...s, [f.key]: e.target.value }))}
                 />
-              </label>
+              </div>
             );
-          })}
-          {error && <div className="text-sm text-red-600">{error}</div>}
-        </div>
-        <div className="modal-action">
-          <button className="btn btn-sm btn-ghost" onClick={onClose} disabled={saving}>
-            取消
-          </button>
-          <button className="btn btn-sm btn-primary" onClick={() => void submit()} disabled={saving}>
-            {saving ? "保存中…" : "保存"}
-          </button>
-        </div>
+          }
+          return (
+            <div key={f.key}>
+              <Typography.Text strong className="block mb-1">
+                {f.label}
+              </Typography.Text>
+              <Input
+                type={f.type === "url" ? "url" : "text"}
+                value={(state[f.key] as string) ?? ""}
+                onChange={(e) => setState((s) => ({ ...s, [f.key]: e.target.value }))}
+              />
+            </div>
+          );
+        })}
+        {error && <Typography.Text type="danger">{error}</Typography.Text>}
       </div>
-      <div className="modal-backdrop" onClick={() => (saving ? null : onClose())} />
-    </div>
+    </Modal>
   );
 }

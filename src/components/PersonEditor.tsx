@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Button, Input, Modal, Typography } from "antd";
 import { apiFetch } from "../auth";
 import ImageUpload from "./ImageUpload";
 
@@ -61,56 +62,44 @@ export default function PersonEditor({ mode, initial, onClose, onSaved }: Props)
   };
 
   return (
-    <div className="modal modal-open" style={{ zIndex: 1500 }}>
-      <div className="modal-box max-w-lg">
-        <h3 className="font-bold text-lg mb-4">{mode === "create" ? "新建 Person" : "编辑 Person"}</h3>
-        <div className="flex flex-col gap-4">
-          <label className="form-control">
-            <span className="label-text mb-1">ID（短代号，建议英文小写，无空格）</span>
-            <input
-              className="input input-bordered"
-              disabled={mode === "edit"}
-              value={id}
-              onChange={(e) => setId(e.target.value)}
-              placeholder="elonmusk"
-            />
-          </label>
-          <label className="form-control">
-            <span className="label-text mb-1">Name</span>
-            <input
-              className="input input-bordered"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-            />
-          </label>
-          <ImageUpload
-            label="Avatar"
-            prefix="avatars"
-            value={avatar}
-            onChange={setAvatar}
-            size={96}
-          />
-          <label className="form-control">
-            <span className="label-text mb-1">Description</span>
-            <textarea
-              className="textarea textarea-bordered"
-              rows={4}
-              value={description ?? ""}
-              onChange={(e) => setDescription(e.target.value)}
-            />
-          </label>
-          {error && <div className="text-sm text-red-600">{error}</div>}
+    <Modal
+      title={mode === "create" ? "新建 Person" : "编辑 Person"}
+      open
+      onCancel={() => (saving ? undefined : onClose())}
+      width={560}
+      zIndex={1500}
+      footer={[
+        <Button key="cancel" onClick={onClose} disabled={saving}>
+          取消
+        </Button>,
+        <Button key="save" type="primary" loading={saving} onClick={() => void submit()}>
+          保存
+        </Button>,
+      ]}
+      maskClosable={!saving}
+    >
+      <div className="flex flex-col gap-4">
+        <div>
+          <Typography.Text strong className="block mb-1">
+            ID（短代号，建议英文小写，无空格）
+          </Typography.Text>
+          <Input disabled={mode === "edit"} value={id} onChange={(e) => setId(e.target.value)} placeholder="elonmusk" />
         </div>
-        <div className="modal-action">
-          <button className="btn btn-sm btn-ghost" onClick={onClose} disabled={saving}>
-            取消
-          </button>
-          <button className="btn btn-sm btn-primary" onClick={() => void submit()} disabled={saving}>
-            {saving ? "保存中…" : "保存"}
-          </button>
+        <div>
+          <Typography.Text strong className="block mb-1">
+            Name
+          </Typography.Text>
+          <Input value={name} onChange={(e) => setName(e.target.value)} />
         </div>
+        <ImageUpload label="Avatar" prefix="avatars" value={avatar} onChange={setAvatar} size={96} />
+        <div>
+          <Typography.Text strong className="block mb-1">
+            Description
+          </Typography.Text>
+          <Input.TextArea rows={4} value={description ?? ""} onChange={(e) => setDescription(e.target.value)} />
+        </div>
+        {error && <Typography.Text type="danger">{error}</Typography.Text>}
       </div>
-      <div className="modal-backdrop" onClick={() => (saving ? null : onClose())} />
-    </div>
+    </Modal>
   );
 }
