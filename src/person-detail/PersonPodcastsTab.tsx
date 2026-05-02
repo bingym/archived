@@ -1,4 +1,4 @@
-import { Button, List, Typography } from "antd";
+import { Button, Empty, Flex, Space, Typography, theme } from "antd";
 import { AudioOutlined, DeleteOutlined, EditOutlined } from "@ant-design/icons";
 import type { PodcastItem } from "./types";
 import ListPagination from "./ListPagination";
@@ -26,38 +26,45 @@ export default function PersonPodcastsTab({
   onEdit,
   onDelete,
 }: Props) {
+  const { token } = theme.useToken();
+
   return (
     <div>
-      <List
-        itemLayout="horizontal"
-        dataSource={podcasts}
-        locale={{ emptyText: "暂无播客" }}
-        renderItem={(item) => (
-          <List.Item
-            actions={
-              authed
-                ? [
-                    <Button key="edit" type="text" size="small" icon={<EditOutlined />} onClick={() => onEdit(item)} />,
-                    <Button key="del" type="text" size="small" danger icon={<DeleteOutlined />} onClick={() => onDelete(item)} />,
-                  ]
-                : []
-            }
-          >
-            <List.Item.Meta
-              title={
-                item.url ? (
+      {podcasts.length === 0 ? (
+        <Empty description="暂无播客" />
+      ) : (
+        <Flex vertical>
+          {podcasts.map((item) => (
+            <Flex
+              key={item.id}
+              align="center"
+              justify="space-between"
+              gap={token.marginSM}
+              style={{
+                padding: `${token.paddingSM}px 0`,
+                borderBottom: `1px solid ${token.colorSplit}`,
+              }}
+            >
+              <div style={{ minWidth: 0, flex: 1 }}>
+                {item.url ? (
                   <Link href={item.url} target="_blank" rel="noopener noreferrer">
                     <AudioOutlined style={{ marginRight: 6 }} />
                     {item.title}
                   </Link>
                 ) : (
                   <Text strong>{item.title}</Text>
-                )
-              }
-            />
-          </List.Item>
-        )}
-      />
+                )}
+              </div>
+              {authed ? (
+                <Space size={0}>
+                  <Button type="text" size="small" icon={<EditOutlined />} onClick={() => onEdit(item)} />
+                  <Button type="text" size="small" danger icon={<DeleteOutlined />} onClick={() => onDelete(item)} />
+                </Space>
+              ) : null}
+            </Flex>
+          ))}
+        </Flex>
+      )}
       <ListPagination page={page} setPage={setPage} total={total} pageSize={pageSize} />
     </div>
   );

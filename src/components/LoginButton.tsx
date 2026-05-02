@@ -32,9 +32,9 @@ export default function LoginButton() {
         title="管理员登录"
         open={open}
         onCancel={() => setOpen(false)}
-        destroyOnClose
+        destroyOnHidden
         zIndex={2000}
-        maskClosable
+        mask={{ closable: true }}
         footer={
           <Flex justify="flex-end">
             <Space>

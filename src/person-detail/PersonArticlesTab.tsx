@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Button, List, Modal, Typography, theme } from "antd";
+import { Button, Empty, Flex, Modal, Space, Typography, theme } from "antd";
 import { DeleteOutlined, EditOutlined } from "@ant-design/icons";
 import type { ArticleItem } from "./types";
 import ListPagination from "./ListPagination";
@@ -32,25 +32,24 @@ export default function PersonArticlesTab({
 
   return (
     <div>
-      <List
-        itemLayout="horizontal"
-        dataSource={articles}
-        locale={{ emptyText: "暂无文章" }}
-        renderItem={(item) => {
-          const firstLine = ((item.content ?? "").split("\n")[0] || item.title).replace(/^#+\s*/, "") || item.title;
-          return (
-            <List.Item
-              actions={
-                authed
-                  ? [
-                      <Button key="edit" type="text" size="small" icon={<EditOutlined />} onClick={() => onEdit(item)} />,
-                      <Button key="del" type="text" size="small" danger icon={<DeleteOutlined />} onClick={() => onDelete(item)} />,
-                    ]
-                  : []
-              }
-            >
-              <List.Item.Meta
-                title={
+      {articles.length === 0 ? (
+        <Empty description="暂无文章" />
+      ) : (
+        <Flex vertical>
+          {articles.map((item) => {
+            const firstLine = ((item.content ?? "").split("\n")[0] || item.title).replace(/^#+\s*/, "") || item.title;
+            return (
+              <Flex
+                key={item.id}
+                align="center"
+                justify="space-between"
+                gap={token.marginSM}
+                style={{
+                  padding: `${token.paddingSM}px 0`,
+                  borderBottom: `1px solid ${token.colorSplit}`,
+                }}
+              >
+                <div style={{ minWidth: 0, flex: 1 }}>
                   <Button
                     type="link"
                     onClick={() => setModalContent(item.content ?? "")}
@@ -58,12 +57,18 @@ export default function PersonArticlesTab({
                   >
                     {firstLine}
                   </Button>
-                }
-              />
-            </List.Item>
-          );
-        }}
-      />
+                </div>
+                {authed ? (
+                  <Space size={0}>
+                    <Button type="text" size="small" icon={<EditOutlined />} onClick={() => onEdit(item)} />
+                    <Button type="text" size="small" danger icon={<DeleteOutlined />} onClick={() => onDelete(item)} />
+                  </Space>
+                ) : null}
+              </Flex>
+            );
+          })}
+        </Flex>
+      )}
       <Modal
         open={modalContent !== null}
         onCancel={() => setModalContent(null)}
@@ -72,8 +77,8 @@ export default function PersonArticlesTab({
         style={{ top: 48 }}
         zIndex={1000}
         title="正文"
-        destroyOnClose
-        maskClosable
+        destroyOnHidden
+        mask={{ closable: true }}
       >
         <Paragraph style={{ whiteSpace: "pre-wrap", marginBottom: 0, maxHeight: "70vh", overflow: "auto" }}>
           {modalContent ?? ""}

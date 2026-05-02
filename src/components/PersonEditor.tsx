@@ -80,8 +80,8 @@ export default function PersonEditor({ mode, initial, onClose, onSaved }: Props)
           </Space>
         </Flex>
       }
-      maskClosable={!saving}
-      destroyOnClose
+      mask={{ closable: !saving }}
+      destroyOnHidden
     >
       <Form layout="vertical" requiredMark="optional" style={{ marginTop: 8 }}>
         <Form.Item label="ID（短代号，英文小写、无空格）" tooltip="创建后不可修改">

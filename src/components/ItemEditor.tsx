@@ -145,7 +145,7 @@ export default function ItemEditor({ kind, personId, initial, onClose, onSaved }
           </Space>
         </Flex>
       }
-      maskClosable={!saving}
+      mask={{ closable: !saving }}
     >
       <Form layout="vertical" requiredMark="optional">
         {fields.map((f) => {

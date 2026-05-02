@@ -178,7 +178,7 @@ export default function PersonDetail() {
   if (!person) {
     return (
       <Flex justify="center" align="center" style={{ minHeight: 320 }}>
-        <Spin size="large" tip="加载中…" />
+        <Spin size="large" description="Loading..." />
       </Flex>
     );
   }
@@ -195,7 +195,7 @@ export default function PersonDetail() {
       okType: "danger",
       cancelText: "取消",
       centered: true,
-      maskClosable: true,
+      mask: { closable: true },
       onOk: async () => {
         try {
           await apiFetch(`/api/v1/${kind}/${itemId}`, { method: "DELETE" });
@@ -204,7 +204,7 @@ export default function PersonDetail() {
           Modal.error({
             title: "删除失败",
             content: e instanceof Error ? e.message : "删除失败",
-            maskClosable: true,
+            mask: { closable: true },
           });
           return Promise.reject(e);
         }

@@ -23,7 +23,7 @@ function RouteFallback() {
   const { token } = theme.useToken();
   return (
     <div style={{ display: "flex", justifyContent: "center", alignItems: "center", padding: token.paddingXL * 3 }}>
-      <Spin size="large" tip="加载中…" />
+      <Spin size="large" description="Loading..." />
     </div>
   );
 }

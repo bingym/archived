@@ -41,7 +41,7 @@ export default function PeopleListPage() {
       okType: "danger",
       cancelText: "取消",
       centered: true,
-      maskClosable: true,
+      mask: { closable: true },
       onOk: async () => {
         try {
           await apiFetch(`/api/v1/people/${p.id}`, { method: "DELETE" });
@@ -100,7 +100,7 @@ export default function PeopleListPage() {
                     </>
                   )}
                   <Link to={`/people/${person.id}/info`}>
-                    <Button type="link" icon={<RightOutlined />} iconPosition="end">
+                    <Button type="link" icon={<RightOutlined />} iconPlacement="end">
                       查看
                     </Button>
                   </Link>
