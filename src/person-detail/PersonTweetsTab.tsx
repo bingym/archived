@@ -74,6 +74,21 @@ export default function PersonTweetsTab({
               style={{ marginTop: token.marginSM, fontSize: token.fontSize, lineHeight: token.lineHeight }}
               dangerouslySetInnerHTML={{ __html: item.content ?? "" }}
             />
+            {item.metadata != null && item.metadata.trim() !== "" && (
+              <Text
+                type="secondary"
+                style={{
+                  display: "block",
+                  marginTop: token.marginSM,
+                  fontSize: token.fontSizeSM,
+                  whiteSpace: "pre-wrap",
+                  wordBreak: "break-word",
+                }}
+              >
+                <span style={{ fontWeight: token.fontWeightStrong }}>Meta：</span>
+                {item.metadata}
+              </Text>
+            )}
             {item.imgs && item.imgs.length > 0 && (
               <Flex wrap="wrap" gap={token.marginSM} style={{ marginTop: token.marginMD }}>
                 {item.imgs.map((k) => (

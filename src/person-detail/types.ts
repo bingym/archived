@@ -21,6 +21,8 @@ export interface PodcastItem extends BaseItem {
 export interface TweetItem extends BaseItem {
   datetime: string | null;
   content: string | null;
+  /** 自由文本元数据（与 API / 库列 `metadata` 一致） */
+  metadata: string | null;
   imgs: string[];
   starred: boolean;
 }

@@ -33,6 +33,7 @@ const FIELDS: Record<ItemKind, FieldDef[]> = {
   tweets: [
     { key: "datetime", label: "Datetime", type: "text" },
     { key: "content", label: "Content (HTML allowed)", type: "textarea" },
+    { key: "metadata", label: "Meta（元数据）", type: "textarea" },
     { key: "imgs", label: "Images", type: "images" },
     { key: "starred", label: "星标", type: "boolean" },
   ],
