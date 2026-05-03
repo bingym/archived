@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { Avatar, Breadcrumb, Button, Divider, Flex, Typography, theme } from "antd";
-import { EditOutlined, UserOutlined } from "@ant-design/icons";
+import { DeleteOutlined, EditOutlined, UserOutlined } from "@ant-design/icons";
 import { resolveImg } from "../lib/img";
 import type { PersonSummary } from "./types";
 
@@ -10,9 +10,10 @@ interface Props {
   person: PersonSummary;
   authed: boolean;
   onEditProfile: () => void;
+  onDeletePerson?: () => void;
 }
 
-export default function PersonDetailHeader({ person, authed, onEditProfile }: Props) {
+export default function PersonDetailHeader({ person, authed, onEditProfile, onDeletePerson }: Props) {
   const { token } = theme.useToken();
   return (
     <div style={{ marginBottom: token.marginLG }}>
@@ -41,9 +42,16 @@ export default function PersonDetailHeader({ person, authed, onEditProfile }: Pr
           </Title>
         </Flex>
         {authed && (
-          <Button type="default" icon={<EditOutlined />} onClick={onEditProfile}>
-            编辑信息
-          </Button>
+          <Flex gap={token.marginXS} wrap="wrap">
+            <Button type="default" icon={<EditOutlined />} onClick={onEditProfile}>
+              编辑信息
+            </Button>
+            {onDeletePerson && (
+              <Button type="default" danger icon={<DeleteOutlined />} onClick={onDeletePerson}>
+                删除人物
+              </Button>
+            )}
+          </Flex>
         )}
       </Flex>
     </div>

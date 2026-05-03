@@ -221,6 +221,32 @@ export default function PersonDetail() {
     return <Navigate to={buildPersonDetailPath(id, "info", 1)} replace />;
   }
 
+  const onDeletePerson = () => {
+    if (!id || !person) return;
+    Modal.confirm({
+      title: "确认删除",
+      content: `确认删除 ${person.name}？这会清空 ta 的所有内容和图片。`,
+      okText: "删除",
+      okType: "danger",
+      cancelText: "取消",
+      centered: true,
+      mask: { closable: true },
+      onOk: async () => {
+        try {
+          await apiFetch(`/api/v1/people/${id}`, { method: "DELETE" });
+          navigate("/people");
+        } catch (e) {
+          Modal.error({
+            title: "删除失败",
+            content: e instanceof Error ? e.message : "删除失败",
+            mask: { closable: true },
+          });
+          return Promise.reject(e);
+        }
+      },
+    });
+  };
+
   const onDeleteItem = (kind: ItemKind, itemId: number) => {
     Modal.confirm({
       title: "确认删除",
@@ -261,7 +287,12 @@ export default function PersonDetail() {
 
   return (
     <div style={{ maxWidth: 1200, margin: "0 auto" }}>
-      <PersonDetailHeader person={person} authed={authed} onEditProfile={() => setPersonEditorOpen(true)} />
+      <PersonDetailHeader
+        person={person}
+        authed={authed}
+        onEditProfile={() => setPersonEditorOpen(true)}
+        onDeletePerson={authed ? () => void onDeletePerson() : undefined}
+      />
       <Tabs
         className="person-detail-tabs-nav-only"
         style={{ marginBottom: token.marginLG }}

@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Avatar, Button, Card, Divider, Empty, Flex, Modal, Spin, Typography, theme } from "antd";
-import { DeleteOutlined, EditOutlined, PlusOutlined, RightOutlined, UserOutlined } from "@ant-design/icons";
-import PersonEditor, { type PersonForm } from "../components/PersonEditor";
+import { Avatar, Button, Card, Col, Empty, Flex, Row, Spin, Typography, theme } from "antd";
+import { PlusOutlined, UserOutlined } from "@ant-design/icons";
+import PersonEditor from "../components/PersonEditor";
 import { apiFetch, useIsAuthed } from "../auth";
 import { resolveImg } from "../lib/img";
 
-const { Title, Text } = Typography;
+const { Title, Text, Paragraph } = Typography;
 
 interface PersonInfo {
   id: string;
@@ -20,7 +20,7 @@ export default function PeopleListPage() {
   const authed = useIsAuthed();
   const [people, setPeople] = useState<PersonInfo[]>([]);
   const [listLoading, setListLoading] = useState(true);
-  const [editor, setEditor] = useState<{ mode: "create" | "edit"; initial?: PersonInfo } | null>(null);
+  const [createEditorOpen, setCreateEditorOpen] = useState(false);
 
   const reload = useCallback(() => {
     setListLoading(true);
@@ -34,95 +34,109 @@ export default function PeopleListPage() {
     reload();
   }, [reload]);
 
-  const onDelete = (p: PersonInfo) => {
-    Modal.confirm({
-      title: "确认删除",
-      content: `确认删除 ${p.name}？这会清空 ta 的所有内容和图片。`,
-      okText: "删除",
-      okType: "danger",
-      cancelText: "取消",
-      centered: true,
-      mask: { closable: true },
-      onOk: async () => {
-        try {
-          await apiFetch(`/api/v1/people/${p.id}`, { method: "DELETE" });
-          reload();
-        } catch (e) {
-          Modal.error({
-            title: "删除失败",
-            content: e instanceof Error ? e.message : "删除失败",
-          });
-          return Promise.reject(e);
-        }
-      },
-    });
-  };
-
-  const rowPadding = `${token.paddingContentVerticalSM}px ${token.paddingLG}px`;
-
   return (
     <div style={{ maxWidth: 960, margin: "0 auto" }}>
-      <Flex justify="space-between" align="center" style={{ marginBottom: 24 }}>
+      <Flex justify="space-between" align="center" style={{ marginBottom: token.marginMD }}>
         <Title level={3} style={{ margin: 0 }}>
           人物
         </Title>
         {authed && (
-          <Button type="primary" icon={<PlusOutlined />} onClick={() => setEditor({ mode: "create" })}>
+          <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreateEditorOpen(true)}>
             新建人物
           </Button>
         )}
       </Flex>
-      <Card styles={{ body: { padding: 0 } }}>
-        {listLoading ? (
-          <Flex vertical justify="center" align="center" gap="small" style={{ minHeight: 240, padding: token.paddingXL }}>
-            <Spin size="large" />
-            <Text type="secondary">Loading...</Text>
-          </Flex>
-        ) : people.length === 0 ? (
-          <Empty style={{ padding: token.paddingXL }} description="暂无数据" image={Empty.PRESENTED_IMAGE_SIMPLE} />
-        ) : (
-          people.map((person, index) => (
-            <div key={person.id}>
-              {index > 0 && <Divider style={{ margin: 0 }} />}
-              <Flex align="center" justify="space-between" gap={token.marginMD} wrap="wrap" style={{ padding: rowPadding }}>
-                <Flex align="center" gap={token.marginMD} style={{ flex: 1, minWidth: 0 }}>
+
+      {listLoading ? (
+        <Flex vertical justify="center" align="center" gap="small" style={{ minHeight: 160, padding: token.paddingLG }}>
+          <Spin />
+          <Text type="secondary">加载中…</Text>
+        </Flex>
+      ) : people.length === 0 ? (
+        <Empty style={{ padding: token.paddingLG }} description="暂无数据" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+      ) : (
+        <Row gutter={[token.marginSM, token.marginSM]}>
+          {people.map((person) => (
+            <Col key={person.id} xs={12} sm={8} md={6} lg={6}>
+              <Link
+                to={`/people/${person.id}/info`}
+                style={{
+                  display: "block",
+                  height: "100%",
+                  color: "inherit",
+                  textDecoration: "none",
+                }}
+              >
+                <Card
+                  styles={{
+                    body: {
+                      padding: token.paddingSM,
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      textAlign: "center",
+                    },
+                  }}
+                  style={{
+                    height: "100%",
+                    borderRadius: token.borderRadius,
+                    borderColor: token.colorBorderSecondary,
+                    boxShadow: "none",
+                  }}
+                >
                   {person.avatar ? (
-                    <Avatar src={resolveImg(person.avatar)} alt={person.name} size={56} />
+                    <Avatar
+                      src={resolveImg(person.avatar)}
+                      alt={person.name}
+                      size={48}
+                      shape="square"
+                      style={{ borderRadius: token.borderRadiusSM, flexShrink: 0 }}
+                    />
                   ) : (
-                    <Avatar size={56} icon={<UserOutlined />} />
+                    <Avatar
+                      size={48}
+                      shape="square"
+                      icon={<UserOutlined />}
+                      style={{
+                        borderRadius: token.borderRadiusSM,
+                        flexShrink: 0,
+                        background: token.colorFillAlter,
+                      }}
+                    />
                   )}
-                  <Flex vertical gap={token.marginXXS} style={{ minWidth: 0 }}>
-                    <Text strong>{person.name}</Text>
-                    <Text type="secondary" ellipsis={{ tooltip: person.description ?? undefined }} style={{ maxWidth: 480 }}>
-                      {person.description}
-                    </Text>
-                  </Flex>
-                </Flex>
-                <Flex align="center" gap={token.marginXXS} wrap="wrap" style={{ flexShrink: 0 }}>
-                  {authed && (
-                    <>
-                      <Button type="text" icon={<EditOutlined />} aria-label="编辑" onClick={() => setEditor({ mode: "edit", initial: person })} />
-                      <Button type="text" danger icon={<DeleteOutlined />} aria-label="删除" onClick={() => void onDelete(person)} />
-                    </>
-                  )}
-                  <Link to={`/people/${person.id}/info`}>
-                    <Button type="link" icon={<RightOutlined />} iconPlacement="end">
-                      查看
-                    </Button>
-                  </Link>
-                </Flex>
-              </Flex>
-            </div>
-          ))
-        )}
-      </Card>
-      {editor && (
+                  <Title
+                    level={5}
+                    ellipsis={{ tooltip: person.name }}
+                    style={{ margin: `${token.marginXS}px 0 0`, fontSize: token.fontSize, lineHeight: 1.3, width: "100%" }}
+                  >
+                    {person.name}
+                  </Title>
+                  <Paragraph
+                    type="secondary"
+                    ellipsis={{ rows: 2, tooltip: person.description || undefined }}
+                    style={{
+                      marginTop: 2,
+                      marginBottom: 0,
+                      fontSize: token.fontSizeSM,
+                      lineHeight: 1.4,
+                      width: "100%",
+                    }}
+                  >
+                    {person.description?.trim() ? person.description : "暂无简介"}
+                  </Paragraph>
+                </Card>
+              </Link>
+            </Col>
+          ))}
+        </Row>
+      )}
+
+      {createEditorOpen && (
         <PersonEditor
-          mode={editor.mode}
-          initial={editor.initial as PersonForm | undefined}
-          onClose={() => setEditor(null)}
+          mode="create"
+          onClose={() => setCreateEditorOpen(false)}
           onSaved={() => {
-            setEditor(null);
+            setCreateEditorOpen(false);
             reload();
           }}
         />
