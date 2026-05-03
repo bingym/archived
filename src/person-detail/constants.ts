@@ -2,7 +2,7 @@ import type { ItemKind } from "../components/ItemEditor";
 import type { TabKey } from "./types";
 
 /** 人物详情条目列表默认每页条数（与 worker `GET /people/:id/:kind` 默认一致） */
-export const DEFAULT_ITEM_PAGE_SIZE = 20;
+export const DEFAULT_ITEM_PAGE_SIZE = 10;
 
 export const ITEM_PAGE_SIZE_OPTIONS = [10, 20, 50] as const;
 export type ItemPageSize = (typeof ITEM_PAGE_SIZE_OPTIONS)[number];

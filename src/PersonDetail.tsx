@@ -35,6 +35,31 @@ import type {
 
 const { Text } = Typography;
 
+/** PUT 返回的 DB 行与列表项字段对齐（含 `imgs` JSON 字符串） */
+function parseTweetImgsFromApi(raw: unknown): string[] {
+  if (typeof raw === "string") {
+    try {
+      const v = JSON.parse(raw) as unknown;
+      return Array.isArray(v) ? v.filter((x): x is string => typeof x === "string") : [];
+    } catch {
+      return [];
+    }
+  }
+  if (Array.isArray(raw)) return raw.filter((x): x is string => typeof x === "string");
+  return [];
+}
+
+function savedRecordToTweetItem(saved: Record<string, unknown>): TweetItem {
+  return {
+    id: Number(saved.id),
+    datetime: (saved.datetime as string | null) ?? null,
+    content: (saved.content as string | null) ?? null,
+    metadata: (saved.metadata as string | null) ?? null,
+    imgs: parseTweetImgsFromApi(saved.imgs),
+    starred: saved.starred === true || saved.starred === 1 || saved.starred === "1",
+  };
+}
+
 export default function PersonDetail() {
   const { token } = theme.useToken();
   const navigate = useNavigate();
@@ -139,6 +164,33 @@ export default function PersonDetail() {
     await refreshPerson();
     setListNonce((n) => n + 1);
   }, [refreshPerson]);
+
+  /** 编辑推文保存后不调列表接口：就地更新行；若星标与当前筛选不符则从本页移除 */
+  const applyEditedTweetToList = useCallback(
+    (saved: Record<string, unknown>) => {
+      const item = savedRecordToTweetItem(saved);
+      const matchesFilter =
+        tweetsStarredFilter === "all" ||
+        (tweetsStarredFilter === "starred" && item.starred) ||
+        (tweetsStarredFilter === "unstarred" && !item.starred);
+
+      setTabItems((prev) => {
+        const list = prev as TweetItem[];
+        const idx = list.findIndex((x) => x.id === item.id);
+        if (idx < 0) return prev;
+        if (!matchesFilter) {
+          return [...list.slice(0, idx), ...list.slice(idx + 1)];
+        }
+        const next = [...list];
+        next[idx] = item;
+        return next;
+      });
+      if (!matchesFilter) {
+        setTabTotal((t) => Math.max(0, t - 1));
+      }
+    },
+    [tweetsStarredFilter]
+  );
 
   const onRebuildCounts = useCallback(async () => {
     if (!id) return;
@@ -449,8 +501,16 @@ export default function PersonDetail() {
           personId={id}
           initial={editor.initial}
           onClose={() => setEditor(null)}
-          onSaved={() => {
+          onSaved={(saved) => {
+            const tweetEdit =
+              editor.kind === "tweets" &&
+              editor.initial &&
+              typeof editor.initial.id === "number";
             setEditor(null);
+            if (tweetEdit) {
+              applyEditedTweetToList(saved);
+              return;
+            }
             void reloadPersonAndList();
           }}
         />
