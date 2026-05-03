@@ -52,6 +52,7 @@ export default function PersonDetail() {
     | null
   >(null);
   const [personEditorOpen, setPersonEditorOpen] = useState(false);
+  const [rebuildCountsLoading, setRebuildCountsLoading] = useState(false);
 
   const tabParsed = parsePersonDetailTabParam(tabSegment);
   const pageFromUrl = parsePersonDetailPage(searchParams);
@@ -138,6 +139,28 @@ export default function PersonDetail() {
     await refreshPerson();
     setListNonce((n) => n + 1);
   }, [refreshPerson]);
+
+  const onRebuildCounts = useCallback(async () => {
+    if (!id) return;
+    setRebuildCountsLoading(true);
+    try {
+      await apiFetch(`/api/v1/people/${id}/rebuild-counts`, { method: "POST" });
+      Modal.success({
+        title: "已同步",
+        content: "该人物的条目计数已从数据库写入 KV。",
+        mask: { closable: true },
+      });
+      await reloadPersonAndList();
+    } catch (e) {
+      Modal.error({
+        title: "同步失败",
+        content: e instanceof Error ? e.message : "同步失败",
+        mask: { closable: true },
+      });
+    } finally {
+      setRebuildCountsLoading(false);
+    }
+  }, [id, reloadPersonAndList]);
 
   const dynamicTabList: { key: TabKey; label: string; count: number }[] = useMemo(() => {
     if (!person) return [{ key: "info", label: "Info", count: 0 }];
@@ -325,6 +348,8 @@ export default function PersonDetail() {
         person={person}
         authed={authed}
         onEditProfile={() => setPersonEditorOpen(true)}
+        onRebuildCounts={authed ? () => void onRebuildCounts() : undefined}
+        rebuildCountsLoading={rebuildCountsLoading}
         onDeletePerson={authed ? () => void onDeletePerson() : undefined}
       />
       <Tabs

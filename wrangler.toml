@@ -15,3 +15,7 @@ migrations_dir = "migrations"
 [[r2_buckets]]
 binding = "R2"
 bucket_name = "archived"
+
+[[kv_namespaces]]
+binding = "KV"
+id = "ad8cc9d692dc4de6ad29e742e3dbfd89"

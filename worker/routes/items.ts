@@ -2,6 +2,12 @@ import { Hono } from "hono";
 import type { Env } from "../types";
 import { requireAdmin } from "../middleware/auth";
 import { deleteR2Keys, isR2Key } from "../lib/r2";
+import {
+  deltaPersonItemCount,
+  deltaTweetCounts,
+  deltaTweetStarredOnly,
+  type PersonCountKind,
+} from "../lib/personItemCounts";
 
 interface FieldSpec {
   name: string;
@@ -142,6 +148,16 @@ items.post("/people/:personId/:kind", requireAdmin, async (c) => {
   const row = await c.env.DB.prepare(sql)
     .bind(personId, ...vals, now, now)
     .first<Record<string, unknown>>();
+  if (!row) {
+    return c.json({ error: "Insert failed" }, 500);
+  }
+
+  if (kind === "tweets") {
+    const ds = Number((row as { starred?: unknown }).starred) === 1 ? 1 : 0;
+    await deltaTweetCounts(c.env.KV, personId, 1, ds);
+  } else {
+    await deltaPersonItemCount(c.env.KV, personId, kind as PersonCountKind, 1);
+  }
 
   return c.json(row, 201);
 });
@@ -185,6 +201,15 @@ items.put("/:kind/:itemId", requireAdmin, async (c) => {
   }
   await deleteR2Keys(c.env, r2KeysToDelete);
 
+  if (kind === "tweets" && updated && "starred" in body) {
+    const oldStarred = Number(current.starred) === 1;
+    const newStarred = Number((updated as { starred: unknown }).starred) === 1;
+    if (oldStarred !== newStarred) {
+      const pid = String(current.person_id);
+      await deltaTweetStarredOnly(c.env.KV, pid, newStarred ? 1 : -1);
+    }
+  }
+
   return c.json(updated);
 });
 
@@ -202,6 +227,14 @@ items.delete("/:kind/:itemId", requireAdmin, async (c) => {
   if (!row) return c.json({ error: "Item not found" }, 404);
 
   await c.env.DB.prepare(`DELETE FROM ${spec.table} WHERE id = ?`).bind(itemId).run();
+
+  const personId = String(row.person_id);
+  if (kind === "tweets") {
+    const ds = Number(row.starred) === 1 ? 1 : 0;
+    await deltaTweetCounts(c.env.KV, personId, -1, -ds);
+  } else {
+    await deltaPersonItemCount(c.env.KV, personId, kind as PersonCountKind, -1);
+  }
 
   const r2Keys: string[] = [];
   for (const field of spec.imageFields?.single ?? []) {

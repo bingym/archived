@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { Avatar, Breadcrumb, Button, Divider, Flex, Typography, theme } from "antd";
-import { DeleteOutlined, EditOutlined, UserOutlined } from "@ant-design/icons";
+import { CloudSyncOutlined, DeleteOutlined, EditOutlined, UserOutlined } from "@ant-design/icons";
 import { resolveImg } from "../lib/img";
 import type { PersonSummary } from "./types";
 
@@ -11,9 +11,18 @@ interface Props {
   authed: boolean;
   onEditProfile: () => void;
   onDeletePerson?: () => void;
+  onRebuildCounts?: () => void;
+  rebuildCountsLoading?: boolean;
 }
 
-export default function PersonDetailHeader({ person, authed, onEditProfile, onDeletePerson }: Props) {
+export default function PersonDetailHeader({
+  person,
+  authed,
+  onEditProfile,
+  onDeletePerson,
+  onRebuildCounts,
+  rebuildCountsLoading,
+}: Props) {
   const { token } = theme.useToken();
   return (
     <div style={{ marginBottom: token.marginLG }}>
@@ -46,6 +55,16 @@ export default function PersonDetailHeader({ person, authed, onEditProfile, onDe
             <Button type="default" icon={<EditOutlined />} onClick={onEditProfile}>
               编辑信息
             </Button>
+            {onRebuildCounts && (
+              <Button
+                type="default"
+                icon={<CloudSyncOutlined />}
+                loading={rebuildCountsLoading}
+                onClick={onRebuildCounts}
+              >
+                同步条目计数
+              </Button>
+            )}
             {onDeletePerson && (
               <Button type="default" danger icon={<DeleteOutlined />} onClick={onDeletePerson}>
                 删除人物

@@ -2,6 +2,15 @@ import { Hono } from "hono";
 import type { Env, Person, TweetRow, Tweet } from "../types";
 import { requireAdmin } from "../middleware/auth";
 import { deleteR2Keys, isR2Key } from "../lib/r2";
+import {
+  deletePersonCountKeys,
+  getListTotalFromKv,
+  initPersonCountKeysZero,
+  personCountKey,
+  readCount,
+  rebuildPersonCountsFromD1,
+  type TweetsStarredFilter,
+} from "../lib/personItemCounts";
 
 const people = new Hono<{ Bindings: Env }>();
 
@@ -56,6 +65,17 @@ function normalizeItemPageSizeQuery(raw: string | undefined): number {
   return (ITEM_PAGE_SIZES as readonly number[]).includes(n) ? n : DEFAULT_ITEM_PAGE_SIZE;
 }
 
+/** 须注册在 `/:id/:kind` 之前，避免 `kind` 误匹配 `rebuild-counts`。 */
+people.post("/:id/rebuild-counts", requireAdmin, async (c) => {
+  const id = c.req.param("id");
+  const person = await c.env.DB.prepare("SELECT 1 FROM people WHERE id = ?").bind(id).first();
+  if (!person) {
+    return c.json({ error: "Person not found" }, 404);
+  }
+  await rebuildPersonCountsFromD1(c.env.DB, c.env.KV, id);
+  return c.json({ ok: true });
+});
+
 /** 分页拉取某人的一类条目（两段路径须与 `GET /:id` 区分）。 */
 people.get("/:id/:kind", async (c) => {
   const id = c.req.param("id");
@@ -77,23 +97,29 @@ people.get("/:id/:kind", async (c) => {
   const orderSql = kind === "tweets" ? "datetime DESC, id DESC" : "id ASC";
 
   let tweetsStarredSql = "";
+  let tweetsStarredFilter: TweetsStarredFilter = "all";
   if (kind === "tweets") {
     const sp = c.req.query("starred");
-    if (sp === "1" || sp === "true") tweetsStarredSql = " AND starred = 1";
-    else if (sp === "0" || sp === "false") tweetsStarredSql = " AND starred = 0";
+    if (sp === "1" || sp === "true") {
+      tweetsStarredSql = " AND starred = 1";
+      tweetsStarredFilter = "starred";
+    } else if (sp === "0" || sp === "false") {
+      tweetsStarredSql = " AND starred = 0";
+      tweetsStarredFilter = "unstarred";
+    }
   }
 
-  const [countRes, rowsRes] = await c.env.DB.batch([
-    c.env.DB.prepare(`SELECT COUNT(*) as n FROM ${table} WHERE person_id = ?${tweetsStarredSql}`).bind(id),
-    c.env.DB
-      .prepare(`SELECT * FROM ${table} WHERE person_id = ?${tweetsStarredSql} ORDER BY ${orderSql} LIMIT ? OFFSET ?`)
-      .bind(id, pageSize, offset),
-  ]);
+  const total = await getListTotalFromKv(c.env.KV, id, kind, tweetsStarredFilter);
 
-  const total = Number((countRes.results?.[0] as { n?: number } | undefined)?.n ?? 0);
+  const { results } = await c.env.DB
+    .prepare(`SELECT * FROM ${table} WHERE person_id = ?${tweetsStarredSql} ORDER BY ${orderSql} LIMIT ? OFFSET ?`)
+    .bind(id, pageSize, offset)
+    .all();
+
+  const rowsRes = { results };
   let items: unknown[] = rowsRes.results ?? [];
   if (kind === "tweets") {
-    items = (rowsRes.results as TweetRow[]).map(tweetRowToApi);
+    items = (rowsRes.results as unknown as TweetRow[]).map(tweetRowToApi);
   }
 
   return c.json({ items, total, page, pageSize });
@@ -110,16 +136,15 @@ people.get("/:id", async (c) => {
     return c.json({ error: "Person not found" }, 404);
   }
 
-  const [booksC, articlesC, videosC, podcastsC, tweetsC, answersC] = await c.env.DB.batch([
-    c.env.DB.prepare("SELECT COUNT(*) as n FROM books WHERE person_id = ?").bind(id),
-    c.env.DB.prepare("SELECT COUNT(*) as n FROM articles WHERE person_id = ?").bind(id),
-    c.env.DB.prepare("SELECT COUNT(*) as n FROM videos WHERE person_id = ?").bind(id),
-    c.env.DB.prepare("SELECT COUNT(*) as n FROM podcasts WHERE person_id = ?").bind(id),
-    c.env.DB.prepare("SELECT COUNT(*) as n FROM tweets WHERE person_id = ?").bind(id),
-    c.env.DB.prepare("SELECT COUNT(*) as n FROM answers WHERE person_id = ?").bind(id),
+  const kv = c.env.KV;
+  const [books, articles, videos, podcasts, tweets, answers] = await Promise.all([
+    readCount(kv, personCountKey(id, "books")),
+    readCount(kv, personCountKey(id, "articles")),
+    readCount(kv, personCountKey(id, "videos")),
+    readCount(kv, personCountKey(id, "podcasts")),
+    readCount(kv, personCountKey(id, "tweets")),
+    readCount(kv, personCountKey(id, "answers")),
   ]);
-
-  const n = (r: typeof booksC) => Number((r.results?.[0] as { n?: number } | undefined)?.n ?? 0);
 
   return c.json({
     id: person.id,
@@ -127,12 +152,12 @@ people.get("/:id", async (c) => {
     avatar: person.avatar,
     description: person.description,
     counts: {
-      books: n(booksC),
-      articles: n(articlesC),
-      videos: n(videosC),
-      podcasts: n(podcastsC),
-      tweets: n(tweetsC),
-      answers: n(answersC),
+      books,
+      articles,
+      videos,
+      podcasts,
+      tweets,
+      answers,
     },
   });
 });
@@ -154,6 +179,7 @@ people.post("/", requireAdmin, async (c) => {
   )
     .bind(id, name, body.avatar ?? null, body.description ?? null, now, now)
     .run();
+  await initPersonCountKeysZero(c.env.KV, id);
   return c.json({ id, name, avatar: body.avatar ?? null, description: body.description ?? null }, 201);
 });
 
@@ -229,6 +255,8 @@ people.delete("/:id", requireAdmin, async (c) => {
     c.env.DB.prepare("DELETE FROM answers WHERE person_id = ?").bind(id),
     c.env.DB.prepare("DELETE FROM people WHERE id = ?").bind(id),
   ]);
+
+  await deletePersonCountKeys(c.env.KV, id);
 
   await deleteR2Keys(c.env, r2Keys);
 
