@@ -108,9 +108,6 @@ people.get("/:id/:kind", async (c) => {
     if (sp === "1" || sp === "true") {
       tweetsStarredSql = " AND starred = 1";
       tweetsStarredFilter = "starred";
-    } else if (sp === "0" || sp === "false") {
-      tweetsStarredSql = " AND starred = 0";
-      tweetsStarredFilter = "unstarred";
     }
   }
 

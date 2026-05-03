@@ -1,8 +1,8 @@
 import { DEFAULT_ITEM_PAGE_SIZE, normalizeItemPageSize, type ItemPageSize } from "./constants";
 import type { TabKey } from "./types";
 
-/** Tweets 列表：按星标筛选（同步到 URL `starred` 查询参数） */
-export type TweetsStarredFilter = "all" | "starred" | "unstarred";
+/** Tweets 列表：仅支持「全部 / 仅星标」；URL 用 `starred=1` 表示仅星标。 */
+export type TweetsStarredFilter = "all" | "starred";
 
 const VALID_TAB_SEGMENTS = new Set<string>([
   "info",
@@ -37,7 +37,6 @@ export function parsePersonDetailPageSize(searchParams: URLSearchParams): ItemPa
 export function parseTweetsStarredFilter(searchParams: URLSearchParams): TweetsStarredFilter {
   const s = searchParams.get("starred");
   if (s === "1" || s === "true") return "starred";
-  if (s === "0" || s === "false") return "unstarred";
   return "all";
 }
 
@@ -45,7 +44,7 @@ export function parseTweetsStarredFilter(searchParams: URLSearchParams): TweetsS
  * 生成详情页路径。
  * - Info 不带 page。
  * - 其他 TAB：仅当 page > 1 时附加 `?page=`（page=1 时省略，便于分享默认首页）。
- * - Tweets：`starred=1` / `starred=0` 与 page 合并为同一查询串。
+ * - Tweets：仅 `starred=1`（仅星标）与 page 合并为同一查询串。
  * - 非默认 `pageSize`（≠20）时附加 `pageSize=`。
  */
 export function buildPersonDetailPath(
@@ -59,8 +58,8 @@ export function buildPersonDetailPath(
   if (tab !== "info" && page > 1) {
     params.set("page", String(page));
   }
-  if (tab === "twitter" && options?.tweetsStarred && options.tweetsStarred !== "all") {
-    params.set("starred", options.tweetsStarred === "starred" ? "1" : "0");
+  if (tab === "twitter" && options?.tweetsStarred === "starred") {
+    params.set("starred", "1");
   }
   const ps = options?.pageSize;
   if (tab !== "info" && ps !== undefined && ps !== DEFAULT_ITEM_PAGE_SIZE) {

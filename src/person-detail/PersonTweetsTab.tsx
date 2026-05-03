@@ -47,7 +47,6 @@ export default function PersonTweetsTab({
           options={[
             { label: "全部", value: "all" },
             { label: "已星标", value: "starred" },
-            { label: "未星标", value: "unstarred" },
           ]}
         />
       </Flex>

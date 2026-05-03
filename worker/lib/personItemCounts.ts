@@ -78,7 +78,7 @@ export async function initPersonCountKeysZero(kv: KVNamespace, personId: string)
   await Promise.all(allPersonCountKeys(personId).map((k) => kv.put(k, "0")));
 }
 
-export type TweetsStarredFilter = "all" | "starred" | "unstarred";
+export type TweetsStarredFilter = "all" | "starred";
 
 export async function getListTotalFromKv(
   kv: KVNamespace,
@@ -92,8 +92,7 @@ export async function getListTotalFromKv(
   const total = await readCount(kv, personCountKey(personId, "tweets"));
   const starred = await readCount(kv, personCountKey(personId, "tweets:starred"));
   if (tweetsStarredFilter === "all") return total;
-  if (tweetsStarredFilter === "starred") return starred;
-  return Math.max(0, total - starred);
+  return starred;
 }
 
 function countFromBatchRow(r: { results?: unknown[] }): number {

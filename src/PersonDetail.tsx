@@ -135,8 +135,8 @@ export default function PersonDetail() {
     setTabLoading(true);
     (() => {
       let url = `/api/v1/people/${id}/${kind}?page=${page}&pageSize=${pageSize}`;
-      if (kind === "tweets" && tweetsStarredFilter !== "all") {
-        url += `&starred=${tweetsStarredFilter === "starred" ? "1" : "0"}`;
+      if (kind === "tweets" && tweetsStarredFilter === "starred") {
+        url += "&starred=1";
       }
       return apiFetch<{ items: unknown[]; total: number }>(url);
     })()
@@ -169,10 +169,7 @@ export default function PersonDetail() {
   const applyEditedTweetToList = useCallback(
     (saved: Record<string, unknown>) => {
       const item = savedRecordToTweetItem(saved);
-      const matchesFilter =
-        tweetsStarredFilter === "all" ||
-        (tweetsStarredFilter === "starred" && item.starred) ||
-        (tweetsStarredFilter === "unstarred" && !item.starred);
+      const matchesFilter = tweetsStarredFilter === "all" || (tweetsStarredFilter === "starred" && item.starred);
 
       setTabItems((prev) => {
         const list = prev as TweetItem[];
