@@ -1,2 +1,5 @@
 # Copy to `.dev.vars` for local `wrangler dev` (never commit `.dev.vars`).
 ADMIN_TOKEN=change-me
+
+# 设为 1 或 true 时，在 wrangler 控制台打印每次 D1 查询的 meta（rows_read、rows_written 等）。
+# LOG_D1_META=1

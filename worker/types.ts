@@ -3,6 +3,8 @@ export interface Env {
   R2: R2Bucket;
   KV: KVNamespace;
   ADMIN_TOKEN: string;
+  /** 设为 `1` / `true` 时在控制台打印 D1 的 `meta`（rows_read、rows_written 等）；建议仅写在 `.dev.vars`。 */
+  LOG_D1_META?: string;
 }
 
 export interface Person {

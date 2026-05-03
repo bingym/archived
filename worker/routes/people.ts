@@ -11,6 +11,7 @@ import {
   rebuildPersonCountsFromD1,
   type TweetsStarredFilter,
 } from "../lib/personItemCounts";
+import { tapD1BatchMeta, tapD1First, tapD1Meta } from "../lib/d1DevLog";
 
 const people = new Hono<{ Bindings: Env }>();
 
@@ -39,9 +40,13 @@ function tweetRowToApi(row: TweetRow): Tweet {
 }
 
 people.get("/", async (c) => {
-  const { results } = await c.env.DB.prepare(
-    "SELECT id, name, avatar, description FROM people ORDER BY id ASC"
-  ).all<Pick<Person, "id" | "name" | "avatar" | "description">>();
+  const { results } = await tapD1Meta(
+    c.env,
+    "GET /people",
+    c.env.DB.prepare("SELECT id, name, avatar, description FROM people ORDER BY id ASC").all<
+      Pick<Person, "id" | "name" | "avatar" | "description">
+    >(),
+  );
   return c.json(results);
 });
 
@@ -68,11 +73,11 @@ function normalizeItemPageSizeQuery(raw: string | undefined): number {
 /** 须注册在 `/:id/:kind` 之前，避免 `kind` 误匹配 `rebuild-counts`。 */
 people.post("/:id/rebuild-counts", requireAdmin, async (c) => {
   const id = c.req.param("id");
-  const person = await c.env.DB.prepare("SELECT 1 FROM people WHERE id = ?").bind(id).first();
+  const person = await tapD1First(c.env, "POST rebuild-counts: person exists", c.env.DB.prepare("SELECT 1 FROM people WHERE id = ?").bind(id));
   if (!person) {
     return c.json({ error: "Person not found" }, 404);
   }
-  await rebuildPersonCountsFromD1(c.env.DB, c.env.KV, id);
+  await rebuildPersonCountsFromD1(c.env.DB, c.env.KV, id, c.env);
   return c.json({ ok: true });
 });
 
@@ -85,7 +90,7 @@ people.get("/:id/:kind", async (c) => {
   }
   const table = ITEM_LIST_KINDS[kind];
 
-  const person = await c.env.DB.prepare("SELECT 1 FROM people WHERE id = ?").bind(id).first();
+  const person = await tapD1First(c.env, "GET /:id/:kind: person exists", c.env.DB.prepare("SELECT 1 FROM people WHERE id = ?").bind(id));
   if (!person) {
     return c.json({ error: "Person not found" }, 404);
   }
@@ -111,10 +116,14 @@ people.get("/:id/:kind", async (c) => {
 
   const total = await getListTotalFromKv(c.env.KV, id, kind, tweetsStarredFilter);
 
-  const { results } = await c.env.DB
-    .prepare(`SELECT * FROM ${table} WHERE person_id = ?${tweetsStarredSql} ORDER BY ${orderSql} LIMIT ? OFFSET ?`)
-    .bind(id, pageSize, offset)
-    .all();
+  const { results } = await tapD1Meta(
+    c.env,
+    `GET /:id/:kind list (${kind})`,
+    c.env.DB
+      .prepare(`SELECT * FROM ${table} WHERE person_id = ?${tweetsStarredSql} ORDER BY ${orderSql} LIMIT ? OFFSET ?`)
+      .bind(id, pageSize, offset)
+      .all(),
+  );
 
   const rowsRes = { results };
   let items: unknown[] = rowsRes.results ?? [];
@@ -127,11 +136,11 @@ people.get("/:id/:kind", async (c) => {
 
 people.get("/:id", async (c) => {
   const id = c.req.param("id");
-  const person = await c.env.DB.prepare(
-    "SELECT id, name, avatar, description, created_at, updated_at FROM people WHERE id = ?"
-  )
-    .bind(id)
-    .first<Person>();
+  const person = await tapD1First<Person>(
+    c.env,
+    "GET /:id person",
+    c.env.DB.prepare("SELECT id, name, avatar, description, created_at, updated_at FROM people WHERE id = ?").bind(id),
+  );
   if (!person) {
     return c.json({ error: "Person not found" }, 404);
   }
@@ -169,16 +178,21 @@ people.post("/", requireAdmin, async (c) => {
   if (!id || !name) {
     return c.json({ error: "id and name are required" }, 400);
   }
-  const exists = await c.env.DB.prepare("SELECT 1 FROM people WHERE id = ?").bind(id).first();
+  const exists = await tapD1First(c.env, "POST /people: exists check", c.env.DB.prepare("SELECT 1 FROM people WHERE id = ?").bind(id));
   if (exists) {
     return c.json({ error: "Person already exists" }, 409);
   }
   const now = Date.now();
-  await c.env.DB.prepare(
-    "INSERT INTO people (id, name, avatar, description, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)"
-  )
-    .bind(id, name, body.avatar ?? null, body.description ?? null, now, now)
-    .run();
+  await tapD1Meta(
+    c.env,
+    "POST /people: insert",
+    c.env.DB
+      .prepare(
+        "INSERT INTO people (id, name, avatar, description, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)",
+      )
+      .bind(id, name, body.avatar ?? null, body.description ?? null, now, now)
+      .run(),
+  );
   await initPersonCountKeysZero(c.env.KV, id);
   return c.json({ id, name, avatar: body.avatar ?? null, description: body.description ?? null }, 201);
 });
@@ -186,11 +200,11 @@ people.post("/", requireAdmin, async (c) => {
 people.put("/:id", requireAdmin, async (c) => {
   const id = c.req.param("id");
   const body = await c.req.json<{ name?: string; avatar?: string | null; description?: string | null }>();
-  const current = await c.env.DB.prepare(
-    "SELECT id, name, avatar, description FROM people WHERE id = ?"
-  )
-    .bind(id)
-    .first<Pick<Person, "id" | "name" | "avatar" | "description">>();
+  const current = await tapD1First<Pick<Person, "id" | "name" | "avatar" | "description">>(
+    c.env,
+    "PUT /:id: load current",
+    c.env.DB.prepare("SELECT id, name, avatar, description FROM people WHERE id = ?").bind(id),
+  );
   if (!current) {
     return c.json({ error: "Person not found" }, 404);
   }
@@ -201,11 +215,14 @@ people.put("/:id", requireAdmin, async (c) => {
     description: body.description !== undefined ? body.description : current.description,
   };
   const now = Date.now();
-  await c.env.DB.prepare(
-    "UPDATE people SET name = ?, avatar = ?, description = ?, updated_at = ? WHERE id = ?"
-  )
-    .bind(next.name, next.avatar, next.description, now, id)
-    .run();
+  await tapD1Meta(
+    c.env,
+    "PUT /:id: update",
+    c.env.DB
+      .prepare("UPDATE people SET name = ?, avatar = ?, description = ?, updated_at = ? WHERE id = ?")
+      .bind(next.name, next.avatar, next.description, now, id)
+      .run(),
+  );
 
   // Cleanup the old avatar from R2 if it was an R2 key and changed.
   if (
@@ -223,17 +240,23 @@ people.put("/:id", requireAdmin, async (c) => {
 people.delete("/:id", requireAdmin, async (c) => {
   const id = c.req.param("id");
 
-  const person = await c.env.DB.prepare("SELECT avatar FROM people WHERE id = ?")
-    .bind(id)
-    .first<{ avatar: string | null }>();
+  const person = await tapD1First<{ avatar: string | null }>(
+    c.env,
+    "DELETE /:id: avatar",
+    c.env.DB.prepare("SELECT avatar FROM people WHERE id = ?").bind(id),
+  );
   if (!person) {
     return c.json({ error: "Person not found" }, 404);
   }
 
-  const [coversRes, tweetImgsRes] = await c.env.DB.batch([
-    c.env.DB.prepare("SELECT cover FROM books WHERE person_id = ? AND cover IS NOT NULL").bind(id),
-    c.env.DB.prepare("SELECT imgs FROM tweets WHERE person_id = ? AND imgs IS NOT NULL").bind(id),
-  ]);
+  const [coversRes, tweetImgsRes] = await tapD1BatchMeta(
+    c.env,
+    "DELETE /:id: collect R2 refs",
+    c.env.DB.batch([
+      c.env.DB.prepare("SELECT cover FROM books WHERE person_id = ? AND cover IS NOT NULL").bind(id),
+      c.env.DB.prepare("SELECT imgs FROM tweets WHERE person_id = ? AND imgs IS NOT NULL").bind(id),
+    ]),
+  );
 
   const r2Keys: string[] = [];
   if (person.avatar && isR2Key(person.avatar)) r2Keys.push(person.avatar);
@@ -246,15 +269,19 @@ people.delete("/:id", requireAdmin, async (c) => {
     }
   }
 
-  await c.env.DB.batch([
-    c.env.DB.prepare("DELETE FROM books WHERE person_id = ?").bind(id),
-    c.env.DB.prepare("DELETE FROM articles WHERE person_id = ?").bind(id),
-    c.env.DB.prepare("DELETE FROM videos WHERE person_id = ?").bind(id),
-    c.env.DB.prepare("DELETE FROM podcasts WHERE person_id = ?").bind(id),
-    c.env.DB.prepare("DELETE FROM tweets WHERE person_id = ?").bind(id),
-    c.env.DB.prepare("DELETE FROM answers WHERE person_id = ?").bind(id),
-    c.env.DB.prepare("DELETE FROM people WHERE id = ?").bind(id),
-  ]);
+  await tapD1BatchMeta(
+    c.env,
+    "DELETE /:id: cascade deletes",
+    c.env.DB.batch([
+      c.env.DB.prepare("DELETE FROM books WHERE person_id = ?").bind(id),
+      c.env.DB.prepare("DELETE FROM articles WHERE person_id = ?").bind(id),
+      c.env.DB.prepare("DELETE FROM videos WHERE person_id = ?").bind(id),
+      c.env.DB.prepare("DELETE FROM podcasts WHERE person_id = ?").bind(id),
+      c.env.DB.prepare("DELETE FROM tweets WHERE person_id = ?").bind(id),
+      c.env.DB.prepare("DELETE FROM answers WHERE person_id = ?").bind(id),
+      c.env.DB.prepare("DELETE FROM people WHERE id = ?").bind(id),
+    ]),
+  );
 
   await deletePersonCountKeys(c.env.KV, id);
 

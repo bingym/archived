@@ -8,6 +8,7 @@ import {
   deltaTweetStarredOnly,
   type PersonCountKind,
 } from "../lib/personItemCounts";
+import { tapD1First, tapD1Meta } from "../lib/d1DevLog";
 
 interface FieldSpec {
   name: string;
@@ -131,9 +132,11 @@ items.post("/people/:personId/:kind", requireAdmin, async (c) => {
   if (!spec) return c.json({ error: "Unknown item kind" }, 404);
 
   const personId = c.req.param("personId");
-  const personExists = await c.env.DB.prepare("SELECT 1 FROM people WHERE id = ?")
-    .bind(personId)
-    .first();
+  const personExists = await tapD1First(
+    c.env,
+    "POST item: person exists",
+    c.env.DB.prepare("SELECT 1 FROM people WHERE id = ?").bind(personId),
+  );
   if (!personExists) return c.json({ error: "Person not found" }, 404);
 
   const body = (await c.req.json().catch(() => ({}))) as Record<string, unknown>;
@@ -145,9 +148,11 @@ items.post("/people/:personId/:kind", requireAdmin, async (c) => {
   const now = Date.now();
   const placeholders = allCols.map(() => "?").join(", ");
   const sql = `INSERT INTO ${spec.table} (${allCols.join(", ")}) VALUES (${placeholders}) RETURNING *`;
-  const row = await c.env.DB.prepare(sql)
-    .bind(personId, ...vals, now, now)
-    .first<Record<string, unknown>>();
+  const row = await tapD1First<Record<string, unknown>>(
+    c.env,
+    `POST item (${kind}): insert`,
+    c.env.DB.prepare(sql).bind(personId, ...vals, now, now),
+  );
   if (!row) {
     return c.json({ error: "Insert failed" }, 500);
   }
@@ -170,9 +175,11 @@ items.put("/:kind/:itemId", requireAdmin, async (c) => {
   const itemId = Number(c.req.param("itemId"));
   if (!Number.isFinite(itemId)) return c.json({ error: "Invalid item id" }, 400);
 
-  const current = await c.env.DB.prepare(`SELECT * FROM ${spec.table} WHERE id = ?`)
-    .bind(itemId)
-    .first<Record<string, unknown>>();
+  const current = await tapD1First<Record<string, unknown>>(
+    c.env,
+    `PUT item (${kind}): load current`,
+    c.env.DB.prepare(`SELECT * FROM ${spec.table} WHERE id = ?`).bind(itemId),
+  );
   if (!current) return c.json({ error: "Item not found" }, 404);
 
   const body = (await c.req.json().catch(() => ({}))) as Record<string, unknown>;
@@ -184,9 +191,11 @@ items.put("/:kind/:itemId", requireAdmin, async (c) => {
   const now = Date.now();
   const setClause = [...cols.map((c2) => `${c2} = ?`), "updated_at = ?"].join(", ");
   const sql = `UPDATE ${spec.table} SET ${setClause} WHERE id = ? RETURNING *`;
-  const updated = await c.env.DB.prepare(sql)
-    .bind(...vals, now, itemId)
-    .first<Record<string, unknown>>();
+  const updated = await tapD1First<Record<string, unknown>>(
+    c.env,
+    `PUT item (${kind}): update`,
+    c.env.DB.prepare(sql).bind(...vals, now, itemId),
+  );
 
   // Detect single-image fields that changed and clean up old R2 keys.
   const r2KeysToDelete: string[] = [];
@@ -221,12 +230,18 @@ items.delete("/:kind/:itemId", requireAdmin, async (c) => {
   const itemId = Number(c.req.param("itemId"));
   if (!Number.isFinite(itemId)) return c.json({ error: "Invalid item id" }, 400);
 
-  const row = await c.env.DB.prepare(`SELECT * FROM ${spec.table} WHERE id = ?`)
-    .bind(itemId)
-    .first<Record<string, unknown>>();
+  const row = await tapD1First<Record<string, unknown>>(
+    c.env,
+    `DELETE item (${kind}): load`,
+    c.env.DB.prepare(`SELECT * FROM ${spec.table} WHERE id = ?`).bind(itemId),
+  );
   if (!row) return c.json({ error: "Item not found" }, 404);
 
-  await c.env.DB.prepare(`DELETE FROM ${spec.table} WHERE id = ?`).bind(itemId).run();
+  await tapD1Meta(
+    c.env,
+    `DELETE item (${kind})`,
+    c.env.DB.prepare(`DELETE FROM ${spec.table} WHERE id = ?`).bind(itemId).run(),
+  );
 
   const personId = String(row.person_id);
   if (kind === "tweets") {

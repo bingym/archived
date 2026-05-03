@@ -1,4 +1,7 @@
-/** KV key prefix for per-person item counts (see wrangler `KV` binding). */
+import type { Env } from "../types";
+import { tapD1BatchMeta } from "./d1DevLog";
+
+/** KV key prefix for per-person item counts（见 wrangler `KV` binding）。 */
 const PREFIX = "v1:pc";
 
 export type PersonCountKind = "books" | "articles" | "videos" | "podcasts" | "answers";
@@ -98,16 +101,25 @@ function countFromBatchRow(r: { results?: unknown[] }): number {
 }
 
 /** 用 D1 聚合结果覆盖该人物在 KV 中的条目计数（管理端纠偏 / 首次对齐）。 */
-export async function rebuildPersonCountsFromD1(db: D1Database, kv: KVNamespace, personId: string): Promise<void> {
-  const [booksC, articlesC, videosC, podcastsC, tweetsC, answersC, tweetsStarredC] = await db.batch([
-    db.prepare("SELECT COUNT(*) as n FROM books WHERE person_id = ?").bind(personId),
-    db.prepare("SELECT COUNT(*) as n FROM articles WHERE person_id = ?").bind(personId),
-    db.prepare("SELECT COUNT(*) as n FROM videos WHERE person_id = ?").bind(personId),
-    db.prepare("SELECT COUNT(*) as n FROM podcasts WHERE person_id = ?").bind(personId),
-    db.prepare("SELECT COUNT(*) as n FROM tweets WHERE person_id = ?").bind(personId),
-    db.prepare("SELECT COUNT(*) as n FROM answers WHERE person_id = ?").bind(personId),
-    db.prepare("SELECT COUNT(*) as n FROM tweets WHERE person_id = ? AND starred = 1").bind(personId),
-  ]);
+export async function rebuildPersonCountsFromD1(
+  db: D1Database,
+  kv: KVNamespace,
+  personId: string,
+  d1LogEnv: Pick<Env, "LOG_D1_META"> = {},
+): Promise<void> {
+  const [booksC, articlesC, videosC, podcastsC, tweetsC, answersC, tweetsStarredC] = await tapD1BatchMeta(
+    d1LogEnv,
+    `rebuildPersonCountsFromD1(${personId})`,
+    db.batch([
+      db.prepare("SELECT COUNT(*) as n FROM books WHERE person_id = ?").bind(personId),
+      db.prepare("SELECT COUNT(*) as n FROM articles WHERE person_id = ?").bind(personId),
+      db.prepare("SELECT COUNT(*) as n FROM videos WHERE person_id = ?").bind(personId),
+      db.prepare("SELECT COUNT(*) as n FROM podcasts WHERE person_id = ?").bind(personId),
+      db.prepare("SELECT COUNT(*) as n FROM tweets WHERE person_id = ?").bind(personId),
+      db.prepare("SELECT COUNT(*) as n FROM answers WHERE person_id = ?").bind(personId),
+      db.prepare("SELECT COUNT(*) as n FROM tweets WHERE person_id = ? AND starred = 1").bind(personId),
+    ]),
+  );
 
   await Promise.all([
     kv.put(personCountKey(personId, "books"), String(countFromBatchRow(booksC))),
