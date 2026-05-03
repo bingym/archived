@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Button, Flex, Form, Input, Modal, Space, Typography } from "antd";
+import { Button, Flex, Form, Input, Modal, Space, Switch, Typography } from "antd";
 import { apiFetch } from "../auth";
 import ImageUpload from "./ImageUpload";
 import ImageMultiUpload from "./ImageMultiUpload";
@@ -9,7 +9,7 @@ export type ItemKind = "books" | "articles" | "videos" | "podcasts" | "tweets" |
 interface FieldDef {
   key: string;
   label: string;
-  type: "text" | "url" | "textarea" | "datetime" | "image" | "images";
+  type: "text" | "url" | "textarea" | "datetime" | "image" | "images" | "boolean";
 }
 
 const FIELDS: Record<ItemKind, FieldDef[]> = {
@@ -34,6 +34,7 @@ const FIELDS: Record<ItemKind, FieldDef[]> = {
     { key: "datetime", label: "Datetime", type: "text" },
     { key: "content", label: "Content (HTML allowed)", type: "textarea" },
     { key: "imgs", label: "Images", type: "images" },
+    { key: "starred", label: "星标", type: "boolean" },
   ],
   answers: [
     { key: "datetime", label: "Datetime", type: "text" },
@@ -68,6 +69,8 @@ function buildInitialState(kind: ItemKind, initial?: Record<string, unknown> | n
       state[f.key] = Array.isArray(v) ? (v as string[]) : [];
     } else if (f.type === "image") {
       state[f.key] = (v as string | null | undefined) ?? null;
+    } else if (f.type === "boolean") {
+      state[f.key] = v === true || v === 1 || v === "1";
     } else {
       state[f.key] = (v as string | null | undefined) ?? "";
     }
@@ -99,6 +102,8 @@ export default function ItemEditor({ kind, personId, initial, onClose, onSaved }
           payload[f.key] = Array.isArray(v) ? v : [];
         } else if (f.type === "image") {
           payload[f.key] = v ?? null;
+        } else if (f.type === "boolean") {
+          payload[f.key] = Boolean(v);
         } else {
           payload[f.key] = v === "" ? null : v;
         }
@@ -178,6 +183,13 @@ export default function ItemEditor({ kind, personId, initial, onClose, onSaved }
                   value={(state[f.key] as string) ?? ""}
                   onChange={(e) => setState((s) => ({ ...s, [f.key]: e.target.value }))}
                 />
+              </Form.Item>
+            );
+          }
+          if (f.type === "boolean") {
+            return (
+              <Form.Item key={f.key} label={f.label}>
+                <Switch checked={Boolean(state[f.key])} onChange={(checked) => setState((s) => ({ ...s, [f.key]: checked }))} />
               </Form.Item>
             );
           }

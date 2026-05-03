@@ -1,5 +1,8 @@
 import type { TabKey } from "./types";
 
+/** Tweets 列表：按星标筛选（同步到 URL `starred` 查询参数） */
+export type TweetsStarredFilter = "all" | "starred" | "unstarred";
+
 const VALID_TAB_SEGMENTS = new Set<string>([
   "info",
   "books",
@@ -25,13 +28,33 @@ export function parsePersonDetailPage(searchParams: URLSearchParams): number {
   return n;
 }
 
+export function parseTweetsStarredFilter(searchParams: URLSearchParams): TweetsStarredFilter {
+  const s = searchParams.get("starred");
+  if (s === "1" || s === "true") return "starred";
+  if (s === "0" || s === "false") return "unstarred";
+  return "all";
+}
+
 /**
  * 生成详情页路径。
  * - Info 不带 page。
  * - 其他 TAB：仅当 page > 1 时附加 `?page=`（page=1 时省略，便于分享默认首页）。
+ * - Tweets：`starred=1` / `starred=0` 与 page 合并为同一查询串。
  */
-export function buildPersonDetailPath(id: string, tab: TabKey, page: number = 1): string {
+export function buildPersonDetailPath(
+  id: string,
+  tab: TabKey,
+  page: number = 1,
+  options?: { tweetsStarred?: TweetsStarredFilter }
+): string {
   const path = `/people/${id}/${tab}`;
-  if (tab === "info" || page <= 1) return path;
-  return `${path}?page=${page}`;
+  const params = new URLSearchParams();
+  if (tab !== "info" && page > 1) {
+    params.set("page", String(page));
+  }
+  if (tab === "twitter" && options?.tweetsStarred && options.tweetsStarred !== "all") {
+    params.set("starred", options.tweetsStarred === "starred" ? "1" : "0");
+  }
+  const qs = params.toString();
+  return qs ? `${path}?${qs}` : path;
 }

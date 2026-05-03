@@ -22,6 +22,7 @@ export interface TweetItem extends BaseItem {
   datetime: string | null;
   content: string | null;
   imgs: string[];
+  starred: boolean;
 }
 export interface AnswerItem extends BaseItem {
   datetime: string | null;

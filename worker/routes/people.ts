@@ -23,6 +23,7 @@ function tweetRowToApi(row: TweetRow): Tweet {
     content: row.content,
     metadata: row.metadata,
     imgs: parseImgs(row.imgs),
+    starred: Number(row.starred) === 1,
     created_at: row.created_at,
     updated_at: row.updated_at,
   };
@@ -69,10 +70,17 @@ people.get("/:id/:kind", async (c) => {
 
   const orderSql = kind === "tweets" ? "datetime DESC, id DESC" : "id ASC";
 
+  let tweetsStarredSql = "";
+  if (kind === "tweets") {
+    const sp = c.req.query("starred");
+    if (sp === "1" || sp === "true") tweetsStarredSql = " AND starred = 1";
+    else if (sp === "0" || sp === "false") tweetsStarredSql = " AND starred = 0";
+  }
+
   const [countRes, rowsRes] = await c.env.DB.batch([
-    c.env.DB.prepare(`SELECT COUNT(*) as n FROM ${table} WHERE person_id = ?`).bind(id),
+    c.env.DB.prepare(`SELECT COUNT(*) as n FROM ${table} WHERE person_id = ?${tweetsStarredSql}`).bind(id),
     c.env.DB
-      .prepare(`SELECT * FROM ${table} WHERE person_id = ? ORDER BY ${orderSql} LIMIT ? OFFSET ?`)
+      .prepare(`SELECT * FROM ${table} WHERE person_id = ?${tweetsStarredSql} ORDER BY ${orderSql} LIMIT ? OFFSET ?`)
       .bind(id, pageSize, offset),
   ]);
 

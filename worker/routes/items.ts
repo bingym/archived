@@ -7,6 +7,8 @@ interface FieldSpec {
   name: string;
   required?: boolean;
   json?: boolean;
+  /** Store as INTEGER 0/1 (SQLite); accept boolean or 0/1 from JSON body */
+  intBool?: boolean;
 }
 
 interface ItemTableSpec {
@@ -56,6 +58,7 @@ const SPECS: Record<string, ItemTableSpec> = {
       { name: "content" },
       { name: "metadata" },
       { name: "imgs", json: true },
+      { name: "starred", intBool: true },
     ],
     imageFields: { multiJson: ["imgs"] },
   },
@@ -77,6 +80,9 @@ function pickPayload(spec: ItemTableSpec, body: Record<string, unknown>) {
     if (!(f.name in body)) continue;
     let v: unknown = body[f.name];
     if (v === undefined) continue;
+    if (f.intBool) {
+      v = v === true || v === 1 || v === "1" ? 1 : 0;
+    }
     if (f.json) {
       v = JSON.stringify(Array.isArray(v) ? v : []);
     }

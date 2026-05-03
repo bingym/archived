@@ -1,7 +1,8 @@
-import { Button, Card, Flex, Image, Typography, theme } from "antd";
-import { DeleteOutlined, EditOutlined } from "@ant-design/icons";
+import { Button, Card, Flex, Image, Segmented, Typography, theme } from "antd";
+import { DeleteOutlined, EditOutlined, StarFilled } from "@ant-design/icons";
 import { resolveImg } from "../lib/img";
 import type { TweetItem } from "./types";
+import type { TweetsStarredFilter } from "./personDetailUrl";
 import ListPagination from "./ListPagination";
 
 const { Text } = Typography;
@@ -11,6 +12,8 @@ const CARD_GAP = 16;
 interface Props {
   tweets: TweetItem[];
   authed: boolean;
+  starredFilter: TweetsStarredFilter;
+  onStarredFilterChange: (next: TweetsStarredFilter) => void;
   page: number;
   setPage: (n: number) => void;
   total: number;
@@ -22,6 +25,8 @@ interface Props {
 export default function PersonTweetsTab({
   tweets,
   authed,
+  starredFilter,
+  onStarredFilterChange,
   page,
   setPage,
   total,
@@ -32,13 +37,29 @@ export default function PersonTweetsTab({
   const { token } = theme.useToken();
   return (
     <div>
+      <Flex align="center" wrap="wrap" gap={token.marginSM} style={{ marginBottom: token.marginMD }}>
+        <Segmented<TweetsStarredFilter>
+          value={starredFilter}
+          onChange={onStarredFilterChange}
+          options={[
+            { label: "全部", value: "all" },
+            { label: "已星标", value: "starred" },
+            { label: "未星标", value: "unstarred" },
+          ]}
+        />
+      </Flex>
       <Flex vertical gap={CARD_GAP}>
         {tweets.map((item) => (
           <Card key={item.id} styles={{ body: { padding: token.paddingLG } }}>
             <Flex justify="space-between" align="flex-start" gap={token.marginSM} wrap="wrap">
-              <Text type="secondary" style={{ fontSize: token.fontSizeSM }}>
-                {item.datetime}
-              </Text>
+              <Flex align="center" gap={token.marginXS} wrap="wrap">
+                {item.starred && (
+                  <StarFilled style={{ color: token.colorWarning, fontSize: token.fontSize }} aria-label="已星标" />
+                )}
+                <Text type="secondary" style={{ fontSize: token.fontSizeSM }}>
+                  {item.datetime}
+                </Text>
+              </Flex>
               {authed && (
                 <Flex gap={token.marginXXS}>
                   <Button type="text" size="small" icon={<EditOutlined />} onClick={() => onEdit(item)} aria-label="编辑" />

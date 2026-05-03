@@ -6,7 +6,13 @@ import { apiFetch, useIsAuthed } from "./auth";
 import ItemEditor, { type ItemKind } from "./components/ItemEditor";
 import PersonEditor from "./components/PersonEditor";
 import { PAGE_SIZE, TAB_TO_KIND, tabToItemsKind } from "./person-detail/constants";
-import { buildPersonDetailPath, parsePersonDetailPage, parsePersonDetailTabParam } from "./person-detail/personDetailUrl";
+import {
+  buildPersonDetailPath,
+  parsePersonDetailPage,
+  parsePersonDetailTabParam,
+  parseTweetsStarredFilter,
+  type TweetsStarredFilter,
+} from "./person-detail/personDetailUrl";
 import PersonDetailHeader from "./person-detail/PersonDetailHeader";
 import PersonInfoTab from "./person-detail/PersonInfoTab";
 import PersonBooksTab from "./person-detail/PersonBooksTab";
@@ -49,6 +55,7 @@ export default function PersonDetail() {
   const tabParsed = parsePersonDetailTabParam(tabSegment);
   const pageFromUrl = parsePersonDetailPage(searchParams);
   const page = tabParsed === null || tabParsed === "info" ? 1 : pageFromUrl;
+  const tweetsStarredFilter = useMemo(() => parseTweetsStarredFilter(searchParams), [searchParams]);
 
   const refreshPerson = useCallback(async () => {
     if (!id) return;
@@ -98,9 +105,13 @@ export default function PersonDetail() {
     }
     let cancelled = false;
     setTabLoading(true);
-    apiFetch<{ items: unknown[]; total: number }>(
-      `/api/v1/people/${id}/${kind}?page=${page}&pageSize=${PAGE_SIZE}`
-    )
+    (() => {
+      let url = `/api/v1/people/${id}/${kind}?page=${page}&pageSize=${PAGE_SIZE}`;
+      if (kind === "tweets" && tweetsStarredFilter !== "all") {
+        url += `&starred=${tweetsStarredFilter === "starred" ? "1" : "0"}`;
+      }
+      return apiFetch<{ items: unknown[]; total: number }>(url);
+    })()
       .then((r) => {
         if (!cancelled) {
           setTabItems(r.items);
@@ -119,7 +130,7 @@ export default function PersonDetail() {
     return () => {
       cancelled = true;
     };
-  }, [id, tabParsed, page, listNonce]);
+  }, [id, tabParsed, page, listNonce, tweetsStarredFilter]);
 
   const reloadPersonAndList = useCallback(async () => {
     await refreshPerson();
@@ -164,17 +175,20 @@ export default function PersonDetail() {
   const goTab = useCallback(
     (next: TabKey) => {
       if (!id) return;
-      navigate(buildPersonDetailPath(id, next, 1));
+      const extra =
+        next === "twitter" ? { tweetsStarred: parseTweetsStarredFilter(searchParams) } : undefined;
+      navigate(buildPersonDetailPath(id, next, 1, extra));
     },
-    [id, navigate]
+    [id, navigate, searchParams]
   );
 
   const goPage = useCallback(
     (nextPage: number) => {
       if (!id || !tabParsed) return;
-      navigate(buildPersonDetailPath(id, tabParsed, nextPage));
+      const extra = tabParsed === "twitter" ? { tweetsStarred: tweetsStarredFilter } : undefined;
+      navigate(buildPersonDetailPath(id, tabParsed, nextPage, extra));
     },
-    [id, tabParsed, navigate]
+    [id, tabParsed, navigate, tweetsStarredFilter]
   );
 
   if (!id) {
@@ -362,6 +376,11 @@ export default function PersonDetail() {
           <PersonTweetsTab
             tweets={tweets}
             authed={authed}
+            starredFilter={tweetsStarredFilter}
+            onStarredFilterChange={(next: TweetsStarredFilter) => {
+              if (!id) return;
+              navigate(buildPersonDetailPath(id, "twitter", 1, { tweetsStarred: next }));
+            }}
             {...paginationProps}
             onEdit={(item) => setEditor({ kind: "tweets", initial: item as unknown as Record<string, unknown> })}
             onDelete={(item) => void onDeleteItem("tweets", item.id)}

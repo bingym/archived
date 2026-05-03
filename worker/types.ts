@@ -57,6 +57,8 @@ export interface TweetRow {
   content: string | null;
   metadata: string | null;
   imgs: string | null;
+  /** SQLite 0/1 */
+  starred: number;
   created_at: number;
   updated_at: number;
 }
@@ -68,6 +70,7 @@ export interface Tweet {
   content: string | null;
   metadata: string | null;
   imgs: string[];
+  starred: boolean;
   created_at: number;
   updated_at: number;
 }
