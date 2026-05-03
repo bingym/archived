@@ -1,3 +1,4 @@
+import { DEFAULT_ITEM_PAGE_SIZE, normalizeItemPageSize, type ItemPageSize } from "./constants";
 import type { TabKey } from "./types";
 
 /** Tweets 列表：按星标筛选（同步到 URL `starred` 查询参数） */
@@ -28,6 +29,11 @@ export function parsePersonDetailPage(searchParams: URLSearchParams): number {
   return n;
 }
 
+/** 解析 URL 中的 `pageSize`，仅允许 10 / 20 / 50，缺省为默认 20 */
+export function parsePersonDetailPageSize(searchParams: URLSearchParams): ItemPageSize {
+  return normalizeItemPageSize(searchParams.get("pageSize"));
+}
+
 export function parseTweetsStarredFilter(searchParams: URLSearchParams): TweetsStarredFilter {
   const s = searchParams.get("starred");
   if (s === "1" || s === "true") return "starred";
@@ -40,12 +46,13 @@ export function parseTweetsStarredFilter(searchParams: URLSearchParams): TweetsS
  * - Info 不带 page。
  * - 其他 TAB：仅当 page > 1 时附加 `?page=`（page=1 时省略，便于分享默认首页）。
  * - Tweets：`starred=1` / `starred=0` 与 page 合并为同一查询串。
+ * - 非默认 `pageSize`（≠20）时附加 `pageSize=`。
  */
 export function buildPersonDetailPath(
   id: string,
   tab: TabKey,
   page: number = 1,
-  options?: { tweetsStarred?: TweetsStarredFilter }
+  options?: { tweetsStarred?: TweetsStarredFilter; pageSize?: ItemPageSize }
 ): string {
   const path = `/people/${id}/${tab}`;
   const params = new URLSearchParams();
@@ -54,6 +61,10 @@ export function buildPersonDetailPath(
   }
   if (tab === "twitter" && options?.tweetsStarred && options.tweetsStarred !== "all") {
     params.set("starred", options.tweetsStarred === "starred" ? "1" : "0");
+  }
+  const ps = options?.pageSize;
+  if (tab !== "info" && ps !== undefined && ps !== DEFAULT_ITEM_PAGE_SIZE) {
+    params.set("pageSize", String(ps));
   }
   const qs = params.toString();
   return qs ? `${path}?${qs}` : path;

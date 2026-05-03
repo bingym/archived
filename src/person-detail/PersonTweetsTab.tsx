@@ -1,6 +1,7 @@
 import { Button, Card, Flex, Image, Segmented, Typography, theme } from "antd";
 import { DeleteOutlined, EditOutlined, StarFilled } from "@ant-design/icons";
 import { resolveImg } from "../lib/img";
+import type { ItemPageSize } from "./constants";
 import type { TweetItem } from "./types";
 import type { TweetsStarredFilter } from "./personDetailUrl";
 import ListPagination from "./ListPagination";
@@ -17,7 +18,8 @@ interface Props {
   page: number;
   setPage: (n: number) => void;
   total: number;
-  pageSize: number;
+  pageSize: ItemPageSize;
+  onPageSizeChange?: (size: ItemPageSize) => void;
   onEdit: (item: TweetItem) => void;
   onDelete: (item: TweetItem) => void;
 }
@@ -31,6 +33,7 @@ export default function PersonTweetsTab({
   setPage,
   total,
   pageSize,
+  onPageSizeChange,
   onEdit,
   onDelete,
 }: Props) {
@@ -89,7 +92,7 @@ export default function PersonTweetsTab({
           </Card>
         ))}
       </Flex>
-      <ListPagination page={page} setPage={setPage} total={total} pageSize={pageSize} />
+      <ListPagination page={page} setPage={setPage} total={total} pageSize={pageSize} onPageSizeChange={onPageSizeChange} />
     </div>
   );
 }

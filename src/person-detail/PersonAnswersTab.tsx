@@ -1,5 +1,6 @@
 import { Button, Card, Empty, Flex, Typography, theme } from "antd";
 import { DeleteOutlined, EditOutlined } from "@ant-design/icons";
+import type { ItemPageSize } from "./constants";
 import type { AnswerItem } from "./types";
 import { formatDatetime } from "./utils";
 import ListPagination from "./ListPagination";
@@ -12,7 +13,8 @@ interface Props {
   page: number;
   setPage: (n: number) => void;
   total: number;
-  pageSize: number;
+  pageSize: ItemPageSize;
+  onPageSizeChange?: (size: ItemPageSize) => void;
   onEdit: (item: AnswerItem) => void;
   onDelete: (item: AnswerItem) => void;
 }
@@ -24,6 +26,7 @@ export default function PersonAnswersTab({
   setPage,
   total,
   pageSize,
+  onPageSizeChange,
   onEdit,
   onDelete,
 }: Props) {
@@ -64,7 +67,7 @@ export default function PersonAnswersTab({
           ))}
         </Flex>
       )}
-      <ListPagination page={page} setPage={setPage} total={total} pageSize={pageSize} />
+      <ListPagination page={page} setPage={setPage} total={total} pageSize={pageSize} onPageSizeChange={onPageSizeChange} />
     </div>
   );
 }

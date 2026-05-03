@@ -46,8 +46,15 @@ const ITEM_LIST_KINDS = {
 } as const;
 type ItemListKind = keyof typeof ITEM_LIST_KINDS;
 
-const DEFAULT_ITEM_PAGE_SIZE = 50;
-const MAX_ITEM_PAGE_SIZE = 100;
+const ITEM_PAGE_SIZES = [10, 20, 50] as const;
+const DEFAULT_ITEM_PAGE_SIZE = 20;
+
+function normalizeItemPageSizeQuery(raw: string | undefined): number {
+  if (raw === undefined || raw === "") return DEFAULT_ITEM_PAGE_SIZE;
+  const n = Number.parseInt(raw, 10);
+  if (!Number.isFinite(n)) return DEFAULT_ITEM_PAGE_SIZE;
+  return (ITEM_PAGE_SIZES as readonly number[]).includes(n) ? n : DEFAULT_ITEM_PAGE_SIZE;
+}
 
 /** 分页拉取某人的一类条目（两段路径须与 `GET /:id` 区分）。 */
 people.get("/:id/:kind", async (c) => {
@@ -64,8 +71,7 @@ people.get("/:id/:kind", async (c) => {
   }
 
   const page = Math.max(1, Number.parseInt(c.req.query("page") ?? "1", 10) || 1);
-  const pageSizeRaw = Number.parseInt(c.req.query("pageSize") ?? String(DEFAULT_ITEM_PAGE_SIZE), 10) || DEFAULT_ITEM_PAGE_SIZE;
-  const pageSize = Math.min(MAX_ITEM_PAGE_SIZE, Math.max(1, pageSizeRaw));
+  const pageSize = normalizeItemPageSizeQuery(c.req.query("pageSize"));
   const offset = (page - 1) * pageSize;
 
   const orderSql = kind === "tweets" ? "datetime DESC, id DESC" : "id ASC";

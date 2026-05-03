@@ -5,10 +5,11 @@ import { PlusOutlined } from "@ant-design/icons";
 import { apiFetch, useIsAuthed } from "./auth";
 import ItemEditor, { type ItemKind } from "./components/ItemEditor";
 import PersonEditor from "./components/PersonEditor";
-import { PAGE_SIZE, TAB_TO_KIND, tabToItemsKind } from "./person-detail/constants";
+import { TAB_TO_KIND, tabToItemsKind, type ItemPageSize } from "./person-detail/constants";
 import {
   buildPersonDetailPath,
   parsePersonDetailPage,
+  parsePersonDetailPageSize,
   parsePersonDetailTabParam,
   parseTweetsStarredFilter,
   type TweetsStarredFilter,
@@ -54,6 +55,7 @@ export default function PersonDetail() {
 
   const tabParsed = parsePersonDetailTabParam(tabSegment);
   const pageFromUrl = parsePersonDetailPage(searchParams);
+  const pageSize = parsePersonDetailPageSize(searchParams);
   const page = tabParsed === null || tabParsed === "info" ? 1 : pageFromUrl;
   const tweetsStarredFilter = useMemo(() => parseTweetsStarredFilter(searchParams), [searchParams]);
 
@@ -106,7 +108,7 @@ export default function PersonDetail() {
     let cancelled = false;
     setTabLoading(true);
     (() => {
-      let url = `/api/v1/people/${id}/${kind}?page=${page}&pageSize=${PAGE_SIZE}`;
+      let url = `/api/v1/people/${id}/${kind}?page=${page}&pageSize=${pageSize}`;
       if (kind === "tweets" && tweetsStarredFilter !== "all") {
         url += `&starred=${tweetsStarredFilter === "starred" ? "1" : "0"}`;
       }
@@ -130,7 +132,7 @@ export default function PersonDetail() {
     return () => {
       cancelled = true;
     };
-  }, [id, tabParsed, page, listNonce, tweetsStarredFilter]);
+  }, [id, tabParsed, page, pageSize, listNonce, tweetsStarredFilter]);
 
   const reloadPersonAndList = useCallback(async () => {
     await refreshPerson();
@@ -175,8 +177,11 @@ export default function PersonDetail() {
   const goTab = useCallback(
     (next: TabKey) => {
       if (!id) return;
+      const ps = parsePersonDetailPageSize(searchParams);
       const extra =
-        next === "twitter" ? { tweetsStarred: parseTweetsStarredFilter(searchParams) } : undefined;
+        next === "twitter"
+          ? { tweetsStarred: parseTweetsStarredFilter(searchParams), pageSize: ps }
+          : { pageSize: ps };
       navigate(buildPersonDetailPath(id, next, 1, extra));
     },
     [id, navigate, searchParams]
@@ -185,8 +190,23 @@ export default function PersonDetail() {
   const goPage = useCallback(
     (nextPage: number) => {
       if (!id || !tabParsed) return;
-      const extra = tabParsed === "twitter" ? { tweetsStarred: tweetsStarredFilter } : undefined;
+      const extra =
+        tabParsed === "twitter"
+          ? { tweetsStarred: tweetsStarredFilter, pageSize }
+          : { pageSize };
       navigate(buildPersonDetailPath(id, tabParsed, nextPage, extra));
+    },
+    [id, tabParsed, navigate, tweetsStarredFilter, pageSize]
+  );
+
+  const goPageSize = useCallback(
+    (nextSize: ItemPageSize) => {
+      if (!id || !tabParsed || tabParsed === "info") return;
+      const extra =
+        tabParsed === "twitter"
+          ? { tweetsStarred: tweetsStarredFilter, pageSize: nextSize }
+          : { pageSize: nextSize };
+      navigate(buildPersonDetailPath(id, tabParsed, 1, extra));
     },
     [id, tabParsed, navigate, tweetsStarredFilter]
   );
@@ -199,7 +219,7 @@ export default function PersonDetail() {
     return <Navigate to={buildPersonDetailPath(id, "info", 1)} replace />;
   }
 
-  if (tabParsed === "info" && searchParams.has("page")) {
+  if (tabParsed === "info" && (searchParams.has("page") || searchParams.has("pageSize"))) {
     return <Navigate to={buildPersonDetailPath(id, "info", 1)} replace />;
   }
 
@@ -297,7 +317,7 @@ export default function PersonDetail() {
 
   const showTabLoading = tab !== "info" && tabLoading;
 
-  const paginationProps = { page, setPage: goPage, total: tabTotal, pageSize: PAGE_SIZE };
+  const paginationProps = { page, setPage: goPage, total: tabTotal, pageSize, onPageSizeChange: goPageSize };
 
   return (
     <div style={{ maxWidth: 1200, margin: "0 auto" }}>
@@ -379,7 +399,7 @@ export default function PersonDetail() {
             starredFilter={tweetsStarredFilter}
             onStarredFilterChange={(next: TweetsStarredFilter) => {
               if (!id) return;
-              navigate(buildPersonDetailPath(id, "twitter", 1, { tweetsStarred: next }));
+              navigate(buildPersonDetailPath(id, "twitter", 1, { tweetsStarred: next, pageSize }));
             }}
             {...paginationProps}
             onEdit={(item) => setEditor({ kind: "tweets", initial: item as unknown as Record<string, unknown> })}

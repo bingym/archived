@@ -18,7 +18,9 @@
     "r2:create": "wrangler r2 bucket create archived-images",
     "import:gzallen-tweets": "node scripts/import-gzallen-twitter.mjs",
     "import:zym-tweets": "node scripts/import-zym-tweets.mjs",
-    "import:wangxing-tweets": "node scripts/import-wangxing-tweets.mjs"
+    "import:wangxing-tweets": "node scripts/import-wangxing-tweets.mjs",
+    "db:normalize-datetime": "node scripts/normalize-datetime-text.mjs",
+    "db:normalize-datetime:dry": "node scripts/normalize-datetime-text.mjs --dry-run"
   },
   "dependencies": {
     "@ant-design/icons": "^6.2.2",

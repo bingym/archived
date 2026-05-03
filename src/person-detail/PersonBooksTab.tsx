@@ -1,6 +1,7 @@
 import { Button, Card, Col, Image, Row, Typography, theme } from "antd";
 import { DeleteOutlined, EditOutlined } from "@ant-design/icons";
 import { resolveImg } from "../lib/img";
+import type { ItemPageSize } from "./constants";
 import type { BookItem } from "./types";
 import ListPagination from "./ListPagination";
 
@@ -12,7 +13,8 @@ interface Props {
   page: number;
   setPage: (n: number) => void;
   total: number;
-  pageSize: number;
+  pageSize: ItemPageSize;
+  onPageSizeChange?: (size: ItemPageSize) => void;
   onEdit: (item: BookItem) => void;
   onDelete: (item: BookItem) => void;
 }
@@ -24,6 +26,7 @@ export default function PersonBooksTab({
   setPage,
   total,
   pageSize,
+  onPageSizeChange,
   onEdit,
   onDelete,
 }: Props) {
@@ -75,7 +78,7 @@ export default function PersonBooksTab({
           </Col>
         ))}
       </Row>
-      <ListPagination page={page} setPage={setPage} total={total} pageSize={pageSize} />
+      <ListPagination page={page} setPage={setPage} total={total} pageSize={pageSize} onPageSizeChange={onPageSizeChange} />
     </div>
   );
 }

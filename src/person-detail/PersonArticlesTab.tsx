@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Button, Empty, Flex, Modal, Space, Typography, theme } from "antd";
 import { DeleteOutlined, EditOutlined } from "@ant-design/icons";
+import type { ItemPageSize } from "./constants";
 import type { ArticleItem } from "./types";
 import ListPagination from "./ListPagination";
 
@@ -12,7 +13,8 @@ interface Props {
   page: number;
   setPage: (n: number) => void;
   total: number;
-  pageSize: number;
+  pageSize: ItemPageSize;
+  onPageSizeChange?: (size: ItemPageSize) => void;
   onEdit: (item: ArticleItem) => void;
   onDelete: (item: ArticleItem) => void;
 }
@@ -24,6 +26,7 @@ export default function PersonArticlesTab({
   setPage,
   total,
   pageSize,
+  onPageSizeChange,
   onEdit,
   onDelete,
 }: Props) {
@@ -84,7 +87,7 @@ export default function PersonArticlesTab({
           {modalContent ?? ""}
         </Paragraph>
       </Modal>
-      <ListPagination page={page} setPage={setPage} total={total} pageSize={pageSize} />
+      <ListPagination page={page} setPage={setPage} total={total} pageSize={pageSize} onPageSizeChange={onPageSizeChange} />
     </div>
   );
 }

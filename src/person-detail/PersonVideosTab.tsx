@@ -1,5 +1,6 @@
 import { Button, Empty, Flex, Space, Typography, theme } from "antd";
 import { DeleteOutlined, EditOutlined, LinkOutlined } from "@ant-design/icons";
+import type { ItemPageSize } from "./constants";
 import type { VideoItem } from "./types";
 import ListPagination from "./ListPagination";
 
@@ -11,7 +12,8 @@ interface Props {
   page: number;
   setPage: (n: number) => void;
   total: number;
-  pageSize: number;
+  pageSize: ItemPageSize;
+  onPageSizeChange?: (size: ItemPageSize) => void;
   onEdit: (item: VideoItem) => void;
   onDelete: (item: VideoItem) => void;
 }
@@ -23,6 +25,7 @@ export default function PersonVideosTab({
   setPage,
   total,
   pageSize,
+  onPageSizeChange,
   onEdit,
   onDelete,
 }: Props) {
@@ -65,7 +68,7 @@ export default function PersonVideosTab({
           ))}
         </Flex>
       )}
-      <ListPagination page={page} setPage={setPage} total={total} pageSize={pageSize} />
+      <ListPagination page={page} setPage={setPage} total={total} pageSize={pageSize} onPageSizeChange={onPageSizeChange} />
     </div>
   );
 }
