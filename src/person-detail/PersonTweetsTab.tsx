@@ -15,9 +15,10 @@ interface Props {
   authed: boolean;
   starredFilter: TweetsStarredFilter;
   onStarredFilterChange: (next: TweetsStarredFilter) => void;
-  page: number;
-  setPage: (n: number) => void;
-  total: number;
+  nextCursor: string | null;
+  prevCursor: string | null;
+  onNext: () => void;
+  onPrev: () => void;
   pageSize: ItemPageSize;
   onPageSizeChange?: (size: ItemPageSize) => void;
   onEdit: (item: TweetItem) => void;
@@ -29,9 +30,10 @@ export default function PersonTweetsTab({
   authed,
   starredFilter,
   onStarredFilterChange,
-  page,
-  setPage,
-  total,
+  nextCursor,
+  prevCursor,
+  onNext,
+  onPrev,
   pageSize,
   onPageSizeChange,
   onEdit,
@@ -106,7 +108,7 @@ export default function PersonTweetsTab({
           </Card>
         ))}
       </Flex>
-      <ListPagination page={page} setPage={setPage} total={total} pageSize={pageSize} onPageSizeChange={onPageSizeChange} />
+      <ListPagination nextCursor={nextCursor} prevCursor={prevCursor} onNext={onNext} onPrev={onPrev} pageSize={pageSize} onPageSizeChange={onPageSizeChange} />
     </div>
   );
 }

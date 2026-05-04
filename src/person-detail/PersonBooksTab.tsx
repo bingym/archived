@@ -10,9 +10,10 @@ const { Link, Text } = Typography;
 interface Props {
   books: BookItem[];
   authed: boolean;
-  page: number;
-  setPage: (n: number) => void;
-  total: number;
+  nextCursor: string | null;
+  prevCursor: string | null;
+  onNext: () => void;
+  onPrev: () => void;
   pageSize: ItemPageSize;
   onPageSizeChange?: (size: ItemPageSize) => void;
   onEdit: (item: BookItem) => void;
@@ -22,9 +23,10 @@ interface Props {
 export default function PersonBooksTab({
   books,
   authed,
-  page,
-  setPage,
-  total,
+  nextCursor,
+  prevCursor,
+  onNext,
+  onPrev,
   pageSize,
   onPageSizeChange,
   onEdit,
@@ -78,7 +80,7 @@ export default function PersonBooksTab({
           </Col>
         ))}
       </Row>
-      <ListPagination page={page} setPage={setPage} total={total} pageSize={pageSize} onPageSizeChange={onPageSizeChange} />
+      <ListPagination nextCursor={nextCursor} prevCursor={prevCursor} onNext={onNext} onPrev={onPrev} pageSize={pageSize} onPageSizeChange={onPageSizeChange} />
     </div>
   );
 }

@@ -4,14 +4,17 @@ import { requireAdmin } from "../middleware/auth";
 import { deleteR2Keys, isR2Key } from "../lib/r2";
 import {
   deletePersonCountKeys,
-  getListTotalFromKv,
   initPersonCountKeysZero,
   personCountKey,
   readCount,
   rebuildPersonCountsFromD1,
-  type TweetsStarredFilter,
 } from "../lib/personItemCounts";
 import { tapD1BatchMeta, tapD1First, tapD1Meta } from "../lib/d1DevLog";
+import {
+  fetchCursorPageByIdAsc,
+  fetchTweetsCursorPage,
+  parseCursorDir,
+} from "../lib/listCursor";
 
 const people = new Hono<{ Bindings: Env }>();
 
@@ -95,40 +98,51 @@ people.get("/:id/:kind", async (c) => {
     return c.json({ error: "Person not found" }, 404);
   }
 
-  const page = Math.max(1, Number.parseInt(c.req.query("page") ?? "1", 10) || 1);
   const pageSize = normalizeItemPageSizeQuery(c.req.query("pageSize"));
-  const offset = (page - 1) * pageSize;
+  const cursor = c.req.query("cursor") ?? null;
+  const dir = parseCursorDir(c.req.query("dir"));
 
-  const orderSql = kind === "tweets" ? "datetime DESC, id DESC" : "id ASC";
-
-  let tweetsStarredSql = "";
-  let tweetsStarredFilter: TweetsStarredFilter = "all";
   if (kind === "tweets") {
+    let tweetsStarredSql = "";
     const sp = c.req.query("starred");
     if (sp === "1" || sp === "true") {
       tweetsStarredSql = " AND starred = 1";
-      tweetsStarredFilter = "starred";
     }
+
+    const result = await fetchTweetsCursorPage<TweetRow>(
+      c.env,
+      `GET /:id/:kind list (tweets)`,
+      id,
+      cursor,
+      dir,
+      pageSize,
+      tweetsStarredSql,
+    );
+
+    return c.json({
+      items: result.items.map(tweetRowToApi),
+      nextCursor: result.nextCursor,
+      prevCursor: result.prevCursor,
+      pageSize,
+    });
   }
 
-  const total = await getListTotalFromKv(c.env.KV, id, kind, tweetsStarredFilter);
-
-  const { results } = await tapD1Meta(
+  const result = await fetchCursorPageByIdAsc(
     c.env,
     `GET /:id/:kind list (${kind})`,
-    c.env.DB
-      .prepare(`SELECT * FROM ${table} WHERE person_id = ?${tweetsStarredSql} ORDER BY ${orderSql} LIMIT ? OFFSET ?`)
-      .bind(id, pageSize, offset)
-      .all(),
+    table,
+    id,
+    cursor,
+    dir,
+    pageSize,
   );
 
-  const rowsRes = { results };
-  let items: unknown[] = rowsRes.results ?? [];
-  if (kind === "tweets") {
-    items = (rowsRes.results as unknown as TweetRow[]).map(tweetRowToApi);
-  }
-
-  return c.json({ items, total, page, pageSize });
+  return c.json({
+    items: result.items,
+    nextCursor: result.nextCursor,
+    prevCursor: result.prevCursor,
+    pageSize,
+  });
 });
 
 people.get("/:id", async (c) => {

@@ -10,9 +10,10 @@ const { Text, Title } = Typography;
 interface Props {
   answers: AnswerItem[];
   authed: boolean;
-  page: number;
-  setPage: (n: number) => void;
-  total: number;
+  nextCursor: string | null;
+  prevCursor: string | null;
+  onNext: () => void;
+  onPrev: () => void;
   pageSize: ItemPageSize;
   onPageSizeChange?: (size: ItemPageSize) => void;
   onEdit: (item: AnswerItem) => void;
@@ -22,9 +23,10 @@ interface Props {
 export default function PersonAnswersTab({
   answers,
   authed,
-  page,
-  setPage,
-  total,
+  nextCursor,
+  prevCursor,
+  onNext,
+  onPrev,
   pageSize,
   onPageSizeChange,
   onEdit,
@@ -67,7 +69,7 @@ export default function PersonAnswersTab({
           ))}
         </Flex>
       )}
-      <ListPagination page={page} setPage={setPage} total={total} pageSize={pageSize} onPageSizeChange={onPageSizeChange} />
+      <ListPagination nextCursor={nextCursor} prevCursor={prevCursor} onNext={onNext} onPrev={onPrev} pageSize={pageSize} onPageSizeChange={onPageSizeChange} />
     </div>
   );
 }

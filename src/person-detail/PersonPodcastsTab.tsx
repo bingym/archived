@@ -9,9 +9,10 @@ const { Link, Text } = Typography;
 interface Props {
   podcasts: PodcastItem[];
   authed: boolean;
-  page: number;
-  setPage: (n: number) => void;
-  total: number;
+  nextCursor: string | null;
+  prevCursor: string | null;
+  onNext: () => void;
+  onPrev: () => void;
   pageSize: ItemPageSize;
   onPageSizeChange?: (size: ItemPageSize) => void;
   onEdit: (item: PodcastItem) => void;
@@ -21,9 +22,10 @@ interface Props {
 export default function PersonPodcastsTab({
   podcasts,
   authed,
-  page,
-  setPage,
-  total,
+  nextCursor,
+  prevCursor,
+  onNext,
+  onPrev,
   pageSize,
   onPageSizeChange,
   onEdit,
@@ -68,7 +70,7 @@ export default function PersonPodcastsTab({
           ))}
         </Flex>
       )}
-      <ListPagination page={page} setPage={setPage} total={total} pageSize={pageSize} onPageSizeChange={onPageSizeChange} />
+      <ListPagination nextCursor={nextCursor} prevCursor={prevCursor} onNext={onNext} onPrev={onPrev} pageSize={pageSize} onPageSizeChange={onPageSizeChange} />
     </div>
   );
 }
