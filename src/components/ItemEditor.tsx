@@ -180,9 +180,10 @@ export default function ItemEditor({ kind, personId, initial, onClose, onSaved }
             return (
               <Form.Item key={f.key} label={f.label}>
                 <Input.TextArea
-                  rows={f.key === "content" ? 12 : 4}
+                  rows={f.key === "content" ? 6 : 2}
                   value={(state[f.key] as string) ?? ""}
                   onChange={(e) => setState((s) => ({ ...s, [f.key]: e.target.value }))}
+                  style={{ resize:"none" }}
                 />
               </Form.Item>
             );

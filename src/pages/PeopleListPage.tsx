@@ -38,11 +38,11 @@ export default function PeopleListPage() {
     <div style={{ maxWidth: 960, margin: "0 auto" }}>
       <Flex justify="space-between" align="center" style={{ marginBottom: token.marginMD }}>
         <Title level={3} style={{ margin: 0 }}>
-          人物
+          People
         </Title>
         {authed && (
           <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreateEditorOpen(true)}>
-            新建人物
+            New Person
           </Button>
         )}
       </Flex>
@@ -50,10 +50,10 @@ export default function PeopleListPage() {
       {listLoading ? (
         <Flex vertical justify="center" align="center" gap="small" style={{ minHeight: 160, padding: token.paddingLG }}>
           <Spin />
-          <Text type="secondary">加载中…</Text>
+          <Text type="secondary">Loading...</Text>
         </Flex>
       ) : people.length === 0 ? (
-        <Empty style={{ padding: token.paddingLG }} description="暂无数据" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+        <Empty style={{ padding: token.paddingLG }} description="No data" image={Empty.PRESENTED_IMAGE_SIMPLE} />
       ) : (
         <Row gutter={[token.marginSM, token.marginSM]}>
           {people.map((person) => (
@@ -122,7 +122,7 @@ export default function PeopleListPage() {
                       width: "100%",
                     }}
                   >
-                    {person.description?.trim() ? person.description : "暂无简介"}
+                    {person.description?.trim() ? person.description : "No description"}
                   </Paragraph>
                 </Card>
               </Link>

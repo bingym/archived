@@ -52,9 +52,7 @@ export default function PersonDetailHeader({
         </Flex>
         {authed && (
           <Flex gap={token.marginXS} wrap="wrap">
-            <Button type="default" icon={<EditOutlined />} onClick={onEditProfile}>
-              编辑信息
-            </Button>
+            <Button type="default" icon={<EditOutlined />} onClick={onEditProfile} />
             {onRebuildCounts && (
               <Button
                 type="default"
@@ -62,13 +60,11 @@ export default function PersonDetailHeader({
                 loading={rebuildCountsLoading}
                 onClick={onRebuildCounts}
               >
-                同步条目计数
+                Sync Count
               </Button>
             )}
             {onDeletePerson && (
-              <Button type="default" danger icon={<DeleteOutlined />} onClick={onDeletePerson}>
-                删除人物
-              </Button>
+              <Button type="default" danger icon={<DeleteOutlined />} onClick={onDeletePerson} />
             )}
           </Flex>
         )}
