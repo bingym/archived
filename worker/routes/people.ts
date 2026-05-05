@@ -12,9 +12,9 @@ import {
 import { tapD1BatchMeta, tapD1First, tapD1Meta } from "../lib/d1DevLog";
 import {
   fetchCursorPageByIdAsc,
-  fetchTweetsCursorPage,
   parseCursorDir,
 } from "../lib/listCursor";
+import { deleteTweetIndexKeys, fetchTweetIdPage, rebuildTweetIndex } from "../lib/tweetIndex";
 
 const people = new Hono<{ Bindings: Env }>();
 
@@ -81,6 +81,7 @@ people.post("/:id/rebuild-counts", requireAdmin, async (c) => {
     return c.json({ error: "Person not found" }, 404);
   }
   await rebuildPersonCountsFromD1(c.env.DB, c.env.KV, id, c.env);
+  await rebuildTweetIndex(c.env.DB, c.env.KV, id, c.env);
   return c.json({ ok: true });
 });
 
@@ -99,33 +100,33 @@ people.get("/:id/:kind", async (c) => {
   }
 
   const pageSize = normalizeItemPageSizeQuery(c.req.query("pageSize"));
-  const cursor = c.req.query("cursor") ?? null;
-  const dir = parseCursorDir(c.req.query("dir"));
 
   if (kind === "tweets") {
-    let tweetsStarredSql = "";
     const sp = c.req.query("starred");
-    if (sp === "1" || sp === "true") {
-      tweetsStarredSql = " AND starred = 1";
+    const starred = sp === "1" || sp === "true";
+    const page = Math.max(1, Number(c.req.query("page")) || 1);
+
+    const { ids, totalPages } = await fetchTweetIdPage(c.env.KV, id, page, pageSize, starred);
+
+    let items: Tweet[] = [];
+    if (ids.length > 0) {
+      const placeholders = ids.map(() => "?").join(", ");
+      const { results } = await tapD1Meta(
+        c.env,
+        "GET /:id/tweets page by IDs",
+        c.env.DB
+          .prepare(`SELECT * FROM tweets WHERE id IN (${placeholders}) ORDER BY datetime DESC, id DESC`)
+          .bind(...ids)
+          .all<TweetRow>(),
+      );
+      items = results.map(tweetRowToApi);
     }
 
-    const result = await fetchTweetsCursorPage<TweetRow>(
-      c.env,
-      `GET /:id/:kind list (tweets)`,
-      id,
-      cursor,
-      dir,
-      pageSize,
-      tweetsStarredSql,
-    );
-
-    return c.json({
-      items: result.items.map(tweetRowToApi),
-      nextCursor: result.nextCursor,
-      prevCursor: result.prevCursor,
-      pageSize,
-    });
+    return c.json({ items, page: Math.min(page, totalPages || 1), totalPages, pageSize });
   }
+
+  const cursor = c.req.query("cursor") ?? null;
+  const dir = parseCursorDir(c.req.query("dir"));
 
   const result = await fetchCursorPageByIdAsc(
     c.env,
@@ -295,6 +296,7 @@ people.delete("/:id", requireAdmin, async (c) => {
   );
 
   await deletePersonCountKeys(c.env.KV, id);
+  await deleteTweetIndexKeys(c.env.KV, id);
 
   await deleteR2Keys(c.env, r2Keys);
 

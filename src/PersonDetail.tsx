@@ -10,6 +10,7 @@ import {
   buildPersonDetailPath,
   parsePersonDetailPageSize,
   parsePersonDetailTabParam,
+  parsePersonDetailTweetPage,
   parseTweetsStarredFilter,
   type TweetsStarredFilter,
 } from "./person-detail/personDetailUrl";
@@ -80,10 +81,13 @@ export default function PersonDetail() {
   const tabParsed = parsePersonDetailTabParam(tabSegment);
   const pageSize = parsePersonDetailPageSize(searchParams);
   const tweetsStarredFilter = useMemo(() => parseTweetsStarredFilter(searchParams), [searchParams]);
+  const tweetPage = useMemo(() => parsePersonDetailTweetPage(searchParams), [searchParams]);
 
   const [fetchParams, setFetchParams] = useState<{ cursor: string | null; dir: "next" | "prev" }>({ cursor: null, dir: "next" });
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [prevCursor, setPrevCursor] = useState<string | null>(null);
+
+  const [tweetTotalPages, setTweetTotalPages] = useState(0);
 
   useEffect(() => {
     setFetchParams({ cursor: null, dir: "next" });
@@ -139,43 +143,94 @@ export default function PersonDetail() {
     }
     let cancelled = false;
     setTabLoading(true);
-    (() => {
+
+    if (kind === "tweets") {
+      let url = `/api/v1/people/${id}/tweets?pageSize=${pageSize}&page=${tweetPage}`;
+      if (tweetsStarredFilter === "starred") url += "&starred=1";
+      apiFetch<{ items: unknown[]; page: number; totalPages: number }>(url)
+        .then((r) => {
+          if (!cancelled) {
+            setTabItems(r.items);
+            setTweetTotalPages(r.totalPages);
+            if (r.page !== tweetPage && id) {
+              navigate(
+                buildPersonDetailPath(id, "twitter", {
+                  tweetsStarred: tweetsStarredFilter,
+                  pageSize,
+                  page: r.page,
+                }),
+                { replace: true },
+              );
+            }
+          }
+        })
+        .catch(() => {
+          if (!cancelled) {
+            setTabItems([]);
+            setTweetTotalPages(0);
+          }
+        })
+        .finally(() => {
+          if (!cancelled) setTabLoading(false);
+        });
+    } else {
       let url = `/api/v1/people/${id}/${kind}?pageSize=${pageSize}`;
       if (fetchParams.cursor) {
         url += `&cursor=${encodeURIComponent(fetchParams.cursor)}&dir=${fetchParams.dir}`;
       }
-      if (kind === "tweets" && tweetsStarredFilter === "starred") {
-        url += "&starred=1";
-      }
-      return apiFetch<{ items: unknown[]; nextCursor: string | null; prevCursor: string | null }>(url);
-    })()
-      .then((r) => {
-        if (!cancelled) {
-          setTabItems(r.items);
-          setNextCursor(r.nextCursor);
-          setPrevCursor(r.prevCursor);
-        }
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setTabItems([]);
-          setNextCursor(null);
-          setPrevCursor(null);
-        }
-      })
-      .finally(() => {
-        if (!cancelled) setTabLoading(false);
-      });
+      apiFetch<{ items: unknown[]; nextCursor: string | null; prevCursor: string | null }>(url)
+        .then((r) => {
+          if (!cancelled) {
+            setTabItems(r.items);
+            setNextCursor(r.nextCursor);
+            setPrevCursor(r.prevCursor);
+          }
+        })
+        .catch(() => {
+          if (!cancelled) {
+            setTabItems([]);
+            setNextCursor(null);
+            setPrevCursor(null);
+          }
+        })
+        .finally(() => {
+          if (!cancelled) setTabLoading(false);
+        });
+    }
+
     return () => {
       cancelled = true;
     };
-  }, [id, tabParsed, fetchParams, pageSize, listNonce, tweetsStarredFilter]);
+  }, [id, tabParsed, fetchParams, pageSize, listNonce, tweetsStarredFilter, tweetPage, navigate]);
 
   const reloadPersonAndList = useCallback(async () => {
     await refreshPerson();
     setFetchParams({ cursor: null, dir: "next" });
+    if (id && tabParsed === "twitter") {
+      navigate(
+        buildPersonDetailPath(id, "twitter", {
+          tweetsStarred: tweetsStarredFilter,
+          pageSize,
+          page: 1,
+        }),
+      );
+    }
     setListNonce((n) => n + 1);
-  }, [refreshPerson]);
+  }, [refreshPerson, id, tabParsed, navigate, tweetsStarredFilter, pageSize]);
+
+  const goTweetPage = useCallback(
+    (nextPage: number) => {
+      if (!id) return;
+      navigate(
+        buildPersonDetailPath(id, "twitter", {
+          tweetsStarred: tweetsStarredFilter,
+          pageSize,
+          page: nextPage,
+        }),
+      );
+    },
+    [id, navigate, tweetsStarredFilter, pageSize],
+  );
 
   /** 编辑推文保存后不调列表接口：就地更新行；若星标与当前筛选不符则从本页移除 */
   const applyEditedTweetToList = useCallback(
@@ -261,11 +316,15 @@ export default function PersonDetail() {
       const ps = parsePersonDetailPageSize(searchParams);
       const extra =
         next === "twitter"
-          ? { tweetsStarred: parseTweetsStarredFilter(searchParams), pageSize: ps }
+          ? {
+              tweetsStarred: parseTweetsStarredFilter(searchParams),
+              pageSize: ps,
+              page: parsePersonDetailTweetPage(searchParams),
+            }
           : { pageSize: ps };
       navigate(buildPersonDetailPath(id, next, extra));
     },
-    [id, navigate, searchParams]
+    [id, navigate, searchParams],
   );
 
   const goNext = useCallback(() => {
@@ -282,7 +341,7 @@ export default function PersonDetail() {
       setFetchParams({ cursor: null, dir: "next" });
       const extra =
         tabParsed === "twitter"
-          ? { tweetsStarred: tweetsStarredFilter, pageSize: nextSize }
+          ? { tweetsStarred: tweetsStarredFilter, pageSize: nextSize, page: 1 }
           : { pageSize: nextSize };
       navigate(buildPersonDetailPath(id, tabParsed, extra));
     },
@@ -297,7 +356,7 @@ export default function PersonDetail() {
     return <Navigate to={buildPersonDetailPath(id, "info")} replace />;
   }
 
-  if (tabParsed === "info" && searchParams.has("pageSize")) {
+  if (tabParsed === "info" && (searchParams.has("pageSize") || searchParams.has("page"))) {
     return <Navigate to={buildPersonDetailPath(id, "info")} replace />;
   }
 
@@ -307,7 +366,7 @@ export default function PersonDetail() {
     return (
       <Flex vertical justify="center" align="center" gap="small" style={{ minHeight: 320 }}>
         <Spin size="large" />
-        <Text type="secondary">加载中…</Text>
+        <Text type="secondary">Loading...</Text>
       </Flex>
     );
   }
@@ -317,11 +376,11 @@ export default function PersonDetail() {
       <div style={{ maxWidth: 1200, margin: "0 auto", paddingTop: 48 }}>
         <Result
           status="error"
-          title="人物加载失败"
-          subTitle="请检查网络或链接是否正确。"
+          title="Person loading failed"
+          subTitle="Please check the network or link is correct."
           extra={
             <Link to="/people">
-              <Button type="primary">返回人物列表</Button>
+              <Button type="primary">Return to person list</Button>
             </Link>
           }
         />
@@ -331,6 +390,19 @@ export default function PersonDetail() {
 
   if (!allowedTabKeys.has(tab)) {
     return <Navigate to={buildPersonDetailPath(id, "info")} replace />;
+  }
+
+  if (tab === "twitter" && (!searchParams.has("pageSize") || !searchParams.has("page"))) {
+    return (
+      <Navigate
+        replace
+        to={buildPersonDetailPath(id, "twitter", {
+          tweetsStarred: tweetsStarredFilter,
+          pageSize,
+          page: tweetPage,
+        })}
+      />
+    );
   }
 
   const onDeletePerson = () => {
@@ -417,7 +489,7 @@ export default function PersonDetail() {
       {authed && itemKindForTab && (
         <Flex style={{ marginBottom: token.marginMD }}>
           <Button type="primary" icon={<PlusOutlined />} onClick={() => setEditor({ kind: itemKindForTab, initial: null })}>
-            新增条目
+            New Item
           </Button>
         </Flex>
       )}
@@ -428,7 +500,7 @@ export default function PersonDetail() {
         {showTabLoading && (
           <Flex align="center" gap="small" style={{ marginBottom: token.marginMD, minHeight: 120 }}>
             <Spin />
-            <Text type="secondary">加载中…</Text>
+            <Text type="secondary">Loading...</Text>
           </Flex>
         )}
 
@@ -479,9 +551,13 @@ export default function PersonDetail() {
             starredFilter={tweetsStarredFilter}
             onStarredFilterChange={(next: TweetsStarredFilter) => {
               if (!id) return;
-              navigate(buildPersonDetailPath(id, "twitter", { tweetsStarred: next, pageSize }));
+              navigate(buildPersonDetailPath(id, "twitter", { tweetsStarred: next, pageSize, page: 1 }));
             }}
-            {...paginationProps}
+            page={tweetPage}
+            totalPages={tweetTotalPages}
+            onPageChange={goTweetPage}
+            pageSize={pageSize}
+            onPageSizeChange={goPageSize}
             onEdit={(item) => setEditor({ kind: "tweets", initial: item as unknown as Record<string, unknown> })}
             onDelete={(item) => void onDeleteItem("tweets", item.id)}
           />

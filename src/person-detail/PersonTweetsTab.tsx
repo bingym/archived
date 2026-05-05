@@ -1,10 +1,9 @@
-import { Button, Card, Flex, Image, Segmented, Typography, theme } from "antd";
+import { Button, Card, Flex, Image, Pagination, Segmented, Select, Typography, theme } from "antd";
 import { DeleteOutlined, EditOutlined, StarFilled } from "@ant-design/icons";
 import { resolveImg } from "../lib/img";
-import type { ItemPageSize } from "./constants";
+import { ITEM_PAGE_SIZE_OPTIONS, normalizeItemPageSize, type ItemPageSize } from "./constants";
 import type { TweetItem } from "./types";
 import type { TweetsStarredFilter } from "./personDetailUrl";
-import ListPagination from "./ListPagination";
 
 const { Text } = Typography;
 
@@ -15,10 +14,9 @@ interface Props {
   authed: boolean;
   starredFilter: TweetsStarredFilter;
   onStarredFilterChange: (next: TweetsStarredFilter) => void;
-  nextCursor: string | null;
-  prevCursor: string | null;
-  onNext: () => void;
-  onPrev: () => void;
+  page: number;
+  totalPages: number;
+  onPageChange: (page: number) => void;
   pageSize: ItemPageSize;
   onPageSizeChange?: (size: ItemPageSize) => void;
   onEdit: (item: TweetItem) => void;
@@ -30,10 +28,9 @@ export default function PersonTweetsTab({
   authed,
   starredFilter,
   onStarredFilterChange,
-  nextCursor,
-  prevCursor,
-  onNext,
-  onPrev,
+  page,
+  totalPages,
+  onPageChange,
   pageSize,
   onPageSizeChange,
   onEdit,
@@ -108,7 +105,26 @@ export default function PersonTweetsTab({
           </Card>
         ))}
       </Flex>
-      <ListPagination nextCursor={nextCursor} prevCursor={prevCursor} onNext={onNext} onPrev={onPrev} pageSize={pageSize} onPageSizeChange={onPageSizeChange} />
+      {totalPages > 0 && (
+        <Flex justify="center" align="center" gap={token.marginSM} style={{ marginTop: token.marginLG, marginBottom: token.marginMD }}>
+          <Pagination
+            current={page}
+            total={totalPages * pageSize}
+            pageSize={pageSize}
+            onChange={onPageChange}
+            showSizeChanger={false}
+            hideOnSinglePage={!onPageSizeChange}
+          />
+          {onPageSizeChange && (
+            <Select
+              value={pageSize}
+              onChange={(v) => onPageSizeChange(normalizeItemPageSize(v))}
+              options={ITEM_PAGE_SIZE_OPTIONS.map((n) => ({ label: `${n} 条/页`, value: n }))}
+              size="middle"
+            />
+          )}
+        </Flex>
+      )}
     </div>
   );
 }

@@ -42,7 +42,11 @@ export default function PersonArticlesTab({
       ) : (
         <Flex vertical>
           {articles.map((item) => {
-            const firstLine = ((item.content ?? "").split("\n")[0] || item.title).replace(/^#+\s*/, "") || item.title;
+            const displayTitle =
+              (item.title ?? "").trim() ||
+              ((item.content ?? "").split("\n")[0] || "")
+                .replace(/^#+\s*/, "")
+                .trim();
             return (
               <Flex
                 key={item.id}
@@ -60,7 +64,7 @@ export default function PersonArticlesTab({
                     onClick={() => setModalContent(item.content ?? "")}
                     style={{ padding: 0, height: "auto", fontWeight: token.fontWeightStrong }}
                   >
-                    {firstLine}
+                    {displayTitle || "(Untitled)"}
                   </Button>
                 </div>
                 {authed ? (

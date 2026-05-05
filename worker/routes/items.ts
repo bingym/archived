@@ -9,6 +9,7 @@ import {
   type PersonCountKind,
 } from "../lib/personItemCounts";
 import { tapD1First, tapD1Meta } from "../lib/d1DevLog";
+import { rebuildTweetIndex } from "../lib/tweetIndex";
 
 interface FieldSpec {
   name: string;
@@ -160,6 +161,7 @@ items.post("/people/:personId/:kind", requireAdmin, async (c) => {
   if (kind === "tweets") {
     const ds = Number((row as { starred?: unknown }).starred) === 1 ? 1 : 0;
     await deltaTweetCounts(c.env.KV, personId, 1, ds);
+    await rebuildTweetIndex(c.env.DB, c.env.KV, personId, c.env);
   } else {
     await deltaPersonItemCount(c.env.KV, personId, kind as PersonCountKind, 1);
   }
@@ -210,12 +212,17 @@ items.put("/:kind/:itemId", requireAdmin, async (c) => {
   }
   await deleteR2Keys(c.env, r2KeysToDelete);
 
-  if (kind === "tweets" && updated && "starred" in body) {
-    const oldStarred = Number(current.starred) === 1;
-    const newStarred = Number((updated as { starred: unknown }).starred) === 1;
-    if (oldStarred !== newStarred) {
-      const pid = String(current.person_id);
-      await deltaTweetStarredOnly(c.env.KV, pid, newStarred ? 1 : -1);
+  if (kind === "tweets" && updated) {
+    const pid = String(current.person_id);
+    if ("starred" in body) {
+      const oldStarred = Number(current.starred) === 1;
+      const newStarred = Number((updated as { starred: unknown }).starred) === 1;
+      if (oldStarred !== newStarred) {
+        await deltaTweetStarredOnly(c.env.KV, pid, newStarred ? 1 : -1);
+      }
+    }
+    if ("datetime" in body || "starred" in body) {
+      await rebuildTweetIndex(c.env.DB, c.env.KV, pid, c.env);
     }
   }
 
@@ -247,6 +254,7 @@ items.delete("/:kind/:itemId", requireAdmin, async (c) => {
   if (kind === "tweets") {
     const ds = Number(row.starred) === 1 ? 1 : 0;
     await deltaTweetCounts(c.env.KV, personId, -1, -ds);
+    await rebuildTweetIndex(c.env.DB, c.env.KV, personId, c.env);
   } else {
     await deltaPersonItemCount(c.env.KV, personId, kind as PersonCountKind, -1);
   }
