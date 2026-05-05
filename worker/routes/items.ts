@@ -9,7 +9,7 @@ import {
   type PersonCountKind,
 } from "../lib/personItemCounts";
 import { tapD1First, tapD1Meta } from "../lib/d1DevLog";
-import { rebuildTweetIndex } from "../lib/tweetIndex";
+import { rebuildTweetIndex, updateTweetStarredIndex } from "../lib/tweetIndex";
 
 interface FieldSpec {
   name: string;
@@ -214,15 +214,28 @@ items.put("/:kind/:itemId", requireAdmin, async (c) => {
 
   if (kind === "tweets" && updated) {
     const pid = String(current.person_id);
-    if ("starred" in body) {
-      const oldStarred = Number(current.starred) === 1;
-      const newStarred = Number((updated as { starred: unknown }).starred) === 1;
-      if (oldStarred !== newStarred) {
-        await deltaTweetStarredOnly(c.env.KV, pid, newStarred ? 1 : -1);
-      }
+    const oldStarred = Number(current.starred) === 1;
+    const newStarred = Number((updated as { starred: unknown }).starred) === 1;
+    const starredChanged = oldStarred !== newStarred;
+
+    const oldDatetime = (current.datetime as string | null | undefined) ?? null;
+    const newDatetime = ((updated as { datetime?: unknown }).datetime as string | null | undefined) ?? null;
+    const datetimeChanged = oldDatetime !== newDatetime;
+
+    if (starredChanged) {
+      await deltaTweetStarredOnly(c.env.KV, pid, newStarred ? 1 : -1);
     }
-    if ("datetime" in body || "starred" in body) {
+
+    if (datetimeChanged) {
+      // datetime affects global order → must rebuild both indexes
       await rebuildTweetIndex(c.env.DB, c.env.KV, pid, c.env);
+    } else if (starredChanged) {
+      // starred-only toggle: update starred index in KV incrementally; fallback to rebuild if KV missing/inconsistent
+      const tweetId = Number((updated as { id?: unknown }).id ?? itemId);
+      const ok = await updateTweetStarredIndex(c.env.KV, pid, tweetId, newStarred);
+      if (!ok) {
+        await rebuildTweetIndex(c.env.DB, c.env.KV, pid, c.env);
+      }
     }
   }
 
