@@ -38,7 +38,7 @@ export default function PersonTweetsTab({
 }: Props) {
   const { token } = theme.useToken();
   return (
-    <div>
+    <div className="tweets-reading-container">
       <Flex align="center" wrap="wrap" gap={token.marginSM} style={{ marginBottom: token.marginMD }}>
         <Segmented<TweetsStarredFilter>
           value={starredFilter}
@@ -51,7 +51,15 @@ export default function PersonTweetsTab({
       </Flex>
       <Flex vertical gap={CARD_GAP}>
         {tweets.map((item) => (
-          <Card key={item.id} styles={{ body: { padding: token.paddingLG } }}>
+          <Card
+            key={item.id}
+            className="tweet-card"
+            styles={{
+              body: {
+                padding: token.paddingLG,
+              },
+            }}
+          >
             <Flex justify="space-between" align="flex-start" gap={token.marginSM} wrap="wrap">
               <Flex align="center" gap={token.marginXS} wrap="wrap">
                 {item.starred && (
@@ -69,12 +77,14 @@ export default function PersonTweetsTab({
               )}
             </Flex>
             <div
-              style={{ marginTop: token.marginSM, fontSize: token.fontSize, lineHeight: token.lineHeight }}
+              className="tweet-content"
+              style={{ marginTop: token.marginSM }}
               dangerouslySetInnerHTML={{ __html: item.content ?? "" }}
             />
             {item.metadata != null && item.metadata.trim() !== "" && (
               <Text
                 type="secondary"
+                className="tweet-meta"
                 style={{
                   display: "block",
                   marginTop: token.marginSM,
@@ -114,6 +124,7 @@ export default function PersonTweetsTab({
             onChange={onPageChange}
             showSizeChanger={false}
             hideOnSinglePage={!onPageSizeChange}
+            simple={true}
           />
           {onPageSizeChange && (
             <Select
