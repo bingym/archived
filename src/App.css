@@ -32,7 +32,6 @@ body {
 
 /* 让卡片内容更像“文章”而不是表单字段 */
 .tweet-content {
-  font-size: 16px;
   line-height: 1.75;
   letter-spacing: 0.1px;
   color: rgba(0, 0, 0, 0.88);
@@ -40,7 +39,6 @@ body {
 
 @media (max-width: 640px) {
   .tweet-content {
-    font-size: 15px;
     line-height: 1.7;
   }
 }
