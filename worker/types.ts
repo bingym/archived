@@ -12,6 +12,8 @@ export interface Person {
   name: string;
   avatar: string | null;
   description: string | null;
+  /** SQLite 0/1：是否对未登录访客可见 */
+  visible: number;
   created_at: number;
   updated_at: number;
 }

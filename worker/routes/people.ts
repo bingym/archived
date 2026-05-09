@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import type { Env, Person, TweetRow, Tweet } from "../types";
-import { requireAdmin } from "../middleware/auth";
+import { isAdminAuthorized, requireAdmin } from "../middleware/auth";
 import { deleteR2Keys, isR2Key } from "../lib/r2";
 import {
   deletePersonCountKeys,
@@ -43,14 +43,30 @@ function tweetRowToApi(row: TweetRow): Tweet {
 }
 
 people.get("/", async (c) => {
+  const admin = isAdminAuthorized(c);
+  // 管理员看到全量并附带 visible；访客只能看到 visible = 1，且不返回 visible 字段以避免暴露隐藏意图。
+  const sql = admin
+    ? "SELECT id, name, avatar, description, visible FROM people ORDER BY id ASC"
+    : "SELECT id, name, avatar, description FROM people WHERE visible = 1 ORDER BY id ASC";
   const { results } = await tapD1Meta(
     c.env,
-    "GET /people",
-    c.env.DB.prepare("SELECT id, name, avatar, description FROM people ORDER BY id ASC").all<
-      Pick<Person, "id" | "name" | "avatar" | "description">
+    admin ? "GET /people (admin)" : "GET /people (public)",
+    c.env.DB.prepare(sql).all<
+      Pick<Person, "id" | "name" | "avatar" | "description"> & { visible?: number }
     >(),
   );
-  return c.json(results);
+  if (!admin) {
+    return c.json(results);
+  }
+  return c.json(
+    results.map((row) => ({
+      id: row.id,
+      name: row.name,
+      avatar: row.avatar,
+      description: row.description,
+      visible: Number(row.visible) === 1,
+    })),
+  );
 });
 
 const ITEM_LIST_KINDS = {
@@ -94,8 +110,14 @@ people.get("/:id/:kind", async (c) => {
   }
   const table = ITEM_LIST_KINDS[kind];
 
-  const person = await tapD1First(c.env, "GET /:id/:kind: person exists", c.env.DB.prepare("SELECT 1 FROM people WHERE id = ?").bind(id));
-  if (!person) {
+  const admin = isAdminAuthorized(c);
+  // 未登录访客对隐藏人物表现为 404，避免泄漏其存在。
+  const person = await tapD1First<{ visible: number }>(
+    c.env,
+    "GET /:id/:kind: person exists",
+    c.env.DB.prepare("SELECT visible FROM people WHERE id = ?").bind(id),
+  );
+  if (!person || (!admin && Number(person.visible) !== 1)) {
     return c.json({ error: "Person not found" }, 404);
   }
 
@@ -148,12 +170,15 @@ people.get("/:id/:kind", async (c) => {
 
 people.get("/:id", async (c) => {
   const id = c.req.param("id");
+  const admin = isAdminAuthorized(c);
   const person = await tapD1First<Person>(
     c.env,
     "GET /:id person",
-    c.env.DB.prepare("SELECT id, name, avatar, description, created_at, updated_at FROM people WHERE id = ?").bind(id),
+    c.env.DB
+      .prepare("SELECT id, name, avatar, description, visible, created_at, updated_at FROM people WHERE id = ?")
+      .bind(id),
   );
-  if (!person) {
+  if (!person || (!admin && Number(person.visible) !== 1)) {
     return c.json({ error: "Person not found" }, 404);
   }
 
@@ -172,6 +197,8 @@ people.get("/:id", async (c) => {
     name: person.name,
     avatar: person.avatar,
     description: person.description,
+    // 仅管理员视角返回 visible，避免向访客暗示存在隐藏字段
+    ...(admin ? { visible: Number(person.visible) === 1 } : {}),
     counts: {
       books,
       articles,
@@ -184,7 +211,13 @@ people.get("/:id", async (c) => {
 });
 
 people.post("/", requireAdmin, async (c) => {
-  const body = await c.req.json<{ id?: string; name?: string; avatar?: string | null; description?: string | null }>();
+  const body = await c.req.json<{
+    id?: string;
+    name?: string;
+    avatar?: string | null;
+    description?: string | null;
+    visible?: boolean;
+  }>();
   const id = (body.id ?? "").trim();
   const name = (body.name ?? "").trim();
   if (!id || !name) {
@@ -194,28 +227,43 @@ people.post("/", requireAdmin, async (c) => {
   if (exists) {
     return c.json({ error: "Person already exists" }, 409);
   }
+  const visible = body.visible === false ? 0 : 1;
   const now = Date.now();
   await tapD1Meta(
     c.env,
     "POST /people: insert",
     c.env.DB
       .prepare(
-        "INSERT INTO people (id, name, avatar, description, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)",
+        "INSERT INTO people (id, name, avatar, description, visible, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
       )
-      .bind(id, name, body.avatar ?? null, body.description ?? null, now, now)
+      .bind(id, name, body.avatar ?? null, body.description ?? null, visible, now, now)
       .run(),
   );
   await initPersonCountKeysZero(c.env.KV, id);
-  return c.json({ id, name, avatar: body.avatar ?? null, description: body.description ?? null }, 201);
+  return c.json(
+    {
+      id,
+      name,
+      avatar: body.avatar ?? null,
+      description: body.description ?? null,
+      visible: visible === 1,
+    },
+    201,
+  );
 });
 
 people.put("/:id", requireAdmin, async (c) => {
   const id = c.req.param("id");
-  const body = await c.req.json<{ name?: string; avatar?: string | null; description?: string | null }>();
-  const current = await tapD1First<Pick<Person, "id" | "name" | "avatar" | "description">>(
+  const body = await c.req.json<{
+    name?: string;
+    avatar?: string | null;
+    description?: string | null;
+    visible?: boolean;
+  }>();
+  const current = await tapD1First<Pick<Person, "id" | "name" | "avatar" | "description" | "visible">>(
     c.env,
     "PUT /:id: load current",
-    c.env.DB.prepare("SELECT id, name, avatar, description FROM people WHERE id = ?").bind(id),
+    c.env.DB.prepare("SELECT id, name, avatar, description, visible FROM people WHERE id = ?").bind(id),
   );
   if (!current) {
     return c.json({ error: "Person not found" }, 404);
@@ -225,14 +273,24 @@ people.put("/:id", requireAdmin, async (c) => {
     name: body.name !== undefined ? body.name : current.name,
     avatar: body.avatar !== undefined ? body.avatar : current.avatar,
     description: body.description !== undefined ? body.description : current.description,
+    visible:
+      body.visible !== undefined
+        ? body.visible
+          ? 1
+          : 0
+        : Number(current.visible) === 1
+          ? 1
+          : 0,
   };
   const now = Date.now();
   await tapD1Meta(
     c.env,
     "PUT /:id: update",
     c.env.DB
-      .prepare("UPDATE people SET name = ?, avatar = ?, description = ?, updated_at = ? WHERE id = ?")
-      .bind(next.name, next.avatar, next.description, now, id)
+      .prepare(
+        "UPDATE people SET name = ?, avatar = ?, description = ?, visible = ?, updated_at = ? WHERE id = ?",
+      )
+      .bind(next.name, next.avatar, next.description, next.visible, now, id)
       .run(),
   );
 
@@ -246,7 +304,13 @@ people.put("/:id", requireAdmin, async (c) => {
     await deleteR2Keys(c.env, [current.avatar]);
   }
 
-  return c.json({ id, ...next });
+  return c.json({
+    id,
+    name: next.name,
+    avatar: next.avatar,
+    description: next.description,
+    visible: next.visible === 1,
+  });
 });
 
 people.delete("/:id", requireAdmin, async (c) => {

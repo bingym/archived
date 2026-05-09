@@ -1,6 +1,12 @@
 import { Link } from "react-router-dom";
-import { Avatar, Breadcrumb, Button, Divider, Flex, Typography, theme } from "antd";
-import { CloudSyncOutlined, DeleteOutlined, EditOutlined, UserOutlined } from "@ant-design/icons";
+import { Avatar, Breadcrumb, Button, Divider, Flex, Tag, Typography, theme } from "antd";
+import {
+  CloudSyncOutlined,
+  DeleteOutlined,
+  EditOutlined,
+  EyeInvisibleOutlined,
+  UserOutlined,
+} from "@ant-design/icons";
 import { resolveImg } from "../lib/img";
 import type { PersonSummary } from "./types";
 
@@ -46,9 +52,16 @@ export default function PersonDetailHeader({
           <Avatar size={96} shape="square" icon={<UserOutlined />} style={{ borderRadius: token.borderRadiusLG, background: token.colorFillAlter }} />
         )}
         <Flex vertical gap={token.marginXXS} style={{ flex: 1, minWidth: 200 }}>
-          <Title level={2} style={{ margin: 0 }} ellipsis={{ rows: 2, tooltip: person.name }}>
-            {person.name}
-          </Title>
+          <Flex align="center" gap={token.marginXS} wrap="wrap">
+            <Title level={2} style={{ margin: 0 }} ellipsis={{ rows: 2, tooltip: person.name }}>
+              {person.name}
+            </Title>
+            {authed && person.visible === false && (
+              <Tag color="warning" icon={<EyeInvisibleOutlined />} style={{ marginInlineEnd: 0 }}>
+                未登录访客不可见
+              </Tag>
+            )}
+          </Flex>
         </Flex>
         {authed && (
           <Flex gap={token.marginXS} wrap="wrap">

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Avatar, Button, Card, Col, Empty, Flex, Row, Spin, Typography, theme } from "antd";
-import { PlusOutlined, UserOutlined } from "@ant-design/icons";
+import { Avatar, Button, Card, Col, Empty, Flex, Row, Spin, Tag, Typography, theme } from "antd";
+import { EyeInvisibleOutlined, PlusOutlined, UserOutlined } from "@ant-design/icons";
 import PersonEditor from "../components/PersonEditor";
 import { apiFetch, useIsAuthed } from "../auth";
 import { resolveImg } from "../lib/img";
@@ -13,6 +13,8 @@ interface PersonInfo {
   name: string;
   avatar: string | null;
   description: string | null;
+  /** 仅管理员视角下出现 */
+  visible?: boolean;
 }
 
 export default function PeopleListPage() {
@@ -75,6 +77,7 @@ export default function PeopleListPage() {
                       flexDirection: "column",
                       alignItems: "center",
                       textAlign: "center",
+                      position: "relative",
                     },
                   }}
                   style={{
@@ -82,8 +85,24 @@ export default function PeopleListPage() {
                     borderRadius: token.borderRadius,
                     borderColor: token.colorBorderSecondary,
                     boxShadow: "none",
+                    opacity: person.visible === false ? 0.6 : 1,
                   }}
                 >
+                  {person.visible === false && (
+                    <Tag
+                      color="default"
+                      icon={<EyeInvisibleOutlined />}
+                      style={{
+                        position: "absolute",
+                        top: token.marginXXS,
+                        right: token.marginXXS,
+                        margin: 0,
+                        fontSize: token.fontSizeSM,
+                      }}
+                    >
+                      隐藏
+                    </Tag>
+                  )}
                   {person.avatar ? (
                     <Avatar
                       src={resolveImg(person.avatar)}

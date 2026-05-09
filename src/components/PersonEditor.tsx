@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Button, Flex, Form, Input, Modal, Space, Typography } from "antd";
+import { Button, Flex, Form, Input, Modal, Space, Switch, Typography } from "antd";
 import { apiFetch } from "../auth";
 import ImageUpload from "./ImageUpload";
 
@@ -8,6 +8,7 @@ export interface PersonForm {
   name: string;
   avatar: string | null;
   description: string | null;
+  visible?: boolean;
 }
 
 interface Props {
@@ -22,6 +23,8 @@ export default function PersonEditor({ mode, initial, onClose, onSaved }: Props)
   const [name, setName] = useState(initial?.name ?? "");
   const [avatar, setAvatar] = useState<string | null>(initial?.avatar ?? null);
   const [description, setDescription] = useState(initial?.description ?? "");
+  // 编辑态默认沿用现值；新建态默认可见。
+  const [visible, setVisible] = useState<boolean>(initial?.visible ?? true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -30,6 +33,7 @@ export default function PersonEditor({ mode, initial, onClose, onSaved }: Props)
     setName(initial?.name ?? "");
     setAvatar(initial?.avatar ?? null);
     setDescription(initial?.description ?? "");
+    setVisible(initial?.visible ?? true);
   }, [initial]);
 
   const submit = async () => {
@@ -42,14 +46,25 @@ export default function PersonEditor({ mode, initial, onClose, onSaved }: Props)
         }
         const created = await apiFetch<PersonForm>("/api/v1/people", {
           method: "POST",
-          body: { id: id.trim(), name: name.trim(), avatar, description: description || null },
+          body: {
+            id: id.trim(),
+            name: name.trim(),
+            avatar,
+            description: description || null,
+            visible,
+          },
         });
         onSaved(created);
       } else {
         const targetId = initial?.id ?? id;
         const updated = await apiFetch<PersonForm>(`/api/v1/people/${targetId}`, {
           method: "PUT",
-          body: { name: name.trim(), avatar, description: description || null },
+          body: {
+            name: name.trim(),
+            avatar,
+            description: description || null,
+            visible,
+          },
         });
         onSaved(updated);
       }
@@ -95,6 +110,17 @@ export default function PersonEditor({ mode, initial, onClose, onSaved }: Props)
         </Form.Item>
         <Form.Item label="简介">
           <Input.TextArea rows={4} value={description ?? ""} onChange={(e) => setDescription(e.target.value)} placeholder="可选" />
+        </Form.Item>
+        <Form.Item
+          label="对未登录访客可见"
+          tooltip="关闭后，未登录的访客将看不到此人物（列表与详情都返回 404）。已登录管理员仍可访问与编辑。"
+        >
+          <Switch
+            checked={visible}
+            onChange={setVisible}
+            checkedChildren="可见"
+            unCheckedChildren="隐藏"
+          />
         </Form.Item>
         {error && (
           <Typography.Text type="danger" role="alert">

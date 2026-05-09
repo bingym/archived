@@ -46,6 +46,8 @@ export interface PersonSummary {
   name: string;
   avatar: string | null;
   description: string | null;
+  /** 仅在管理员视角下由 API 返回；访客视角缺省 */
+  visible?: boolean;
   counts: PersonCounts;
 }
 
