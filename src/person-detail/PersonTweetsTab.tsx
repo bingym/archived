@@ -101,13 +101,13 @@ export default function PersonTweetsTab({
                 {item.imgs.map((k) => (
                   <Image
                     key={k}
-                    src={resolveImg(k)}
+                    src={resolveImg(k, { width: 400, height: 400, fit: "cover" })}
                     alt=""
                     width={200}
                     height={200}
                     className="tweet-img"
                     style={{ objectFit: "cover", borderRadius: 12 }}
-                    preview={{ src: resolveImg(k) }}
+                    preview={{ src: resolveImg(k, { quality: 90 }) }}
                   />
                 ))}
               </Flex>

@@ -2,15 +2,36 @@ import { apiFetch, getToken } from "../auth";
 
 export type UploadPrefix = "avatars" | "covers" | "tweets";
 
-const R2_CDN_BASE = import.meta.env.PROD
-  ? "https://archived.cdn.1994.link"
-  : "/r2";
+const R2_CDN = "https://archived.cdn.1994.link";
+const IS_PROD = import.meta.env.PROD;
 
-/** Resolve a stored image reference (R2 key or external URL) to a renderable src. */
-export function resolveImg(value: string | null | undefined): string {
+export interface ImgTransform {
+  width?: number;
+  height?: number;
+  fit?: "cover" | "contain" | "scale-down" | "crop";
+  quality?: number;
+  format?: "auto" | "webp" | "avif";
+}
+
+/**
+ * Resolve a stored image reference (R2 key or external URL) to a renderable src.
+ * In production, uses Cloudflare Image Transformations for compression/resizing.
+ */
+export function resolveImg(
+  value: string | null | undefined,
+  transform?: ImgTransform,
+): string {
   if (!value) return "";
   if (/^https?:\/\//i.test(value)) return value;
-  return `${R2_CDN_BASE}/${value.replace(/^\/+/, "")}`;
+  const key = value.replace(/^\/+/, "");
+  if (!IS_PROD) return `/r2/${key}`;
+
+  const { width, height, fit, quality = 80, format = "auto" } = transform ?? {};
+  const opts = [`format=${format}`, `quality=${quality}`];
+  if (width) opts.push(`width=${width}`);
+  if (height) opts.push(`height=${height}`);
+  if (fit) opts.push(`fit=${fit}`);
+  return `${R2_CDN}/cdn-cgi/image/${opts.join(",")}/${key}`;
 }
 
 export function isR2Key(value: string | null | undefined): value is string {

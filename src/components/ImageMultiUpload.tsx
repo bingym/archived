@@ -67,7 +67,7 @@ export default function ImageMultiUpload({ value, onChange, label, size = 96, ma
               background: token.colorFillAlter,
             }}
           >
-            <img src={resolveImg(k)} alt="" style={{ width: size, height: size, objectFit: "cover" }} />
+            <img src={resolveImg(k, { width: size * 2, fit: "cover" })} alt="" style={{ width: size, height: size, objectFit: "cover" }} />
             <Button
               type="primary"
               danger

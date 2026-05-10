@@ -52,7 +52,7 @@ export default function ImageUpload({ value, onChange, prefix, label, size = 96,
           }}
         >
           {value ? (
-            <img src={resolveImg(value)} alt={label ?? "image"} style={{ width: size, height: size, objectFit: "cover" }} />
+            <img src={resolveImg(value, { width: size * 2, fit: "cover" })} alt={label ?? "image"} style={{ width: size, height: size, objectFit: "cover" }} />
           ) : (
             <Typography.Text type="secondary" style={{ fontSize: token.fontSizeSM }}>
               无图

@@ -47,7 +47,7 @@ export default function PersonBooksTab({
                   <div style={{ padding: "12px 12px 0" }}>
                     <Image
                       alt={item.title}
-                      src={resolveImg(item.cover)}
+                      src={resolveImg(item.cover, { width: 400, height: 360, fit: "cover" })}
                       width="100%"
                       style={{ height: 180, objectFit: "cover", borderRadius: 8 }}
                       preview={false}

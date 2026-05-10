@@ -115,7 +115,7 @@ export default function PersonDetailSidebar({
       <Flex vertical align="center" style={{ marginBottom: 20 }}>
         {person.avatar ? (
           <Avatar
-            src={resolveImg(person.avatar)}
+            src={resolveImg(person.avatar, { width: 160, fit: "cover" })}
             alt={person.name}
             size={80}
             shape="square"

@@ -152,7 +152,7 @@ export default function PeopleListPage() {
                   )}
                   {person.avatar ? (
                     <Avatar
-                      src={resolveImg(person.avatar)}
+                      src={resolveImg(person.avatar, { width: 152, fit: "cover" })}
                       alt={person.name}
                       size={76}
                       shape="circle"
@@ -218,7 +218,7 @@ export default function PeopleListPage() {
             >
               {person.avatar ? (
                 <Avatar
-                  src={resolveImg(person.avatar)}
+                  src={resolveImg(person.avatar, { width: 84, fit: "cover" })}
                   alt={person.name}
                   size={42}
                   shape="circle"
