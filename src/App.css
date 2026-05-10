@@ -6,6 +6,8 @@ body {
   padding: 0;
   height: 100%;
   width: 100%;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 #root {
@@ -17,24 +19,33 @@ body {
   display: none;
 }
 
-/* Tweets：更适合阅读的排版与聚焦宽度 */
+/* ── 人物卡片 hover 动效 ── */
+.person-card-link .ant-card {
+  transition: transform 200ms ease, box-shadow 200ms ease;
+}
+
+.person-card-link:hover .ant-card {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+}
+
+/* ── Tweets：更适合阅读的排版与聚焦宽度 ── */
 .tweets-reading-container {
   max-width: 860px;
   margin: 0 auto;
 }
 
-/* 较大的桌面屏幕再稍微收窄一点，避免“太宽读不动” */
 @media (min-width: 1280px) {
   .tweets-reading-container {
     max-width: 820px;
   }
 }
 
-/* 让卡片内容更像“文章”而不是表单字段 */
 .tweet-content {
-  line-height: 1.75;
+  font-size: 15px;
+  line-height: 1.8;
   letter-spacing: 0.1px;
-  color: rgba(0, 0, 0, 0.88);
+  color: #1a1a1a;
 }
 
 @media (max-width: 640px) {
@@ -62,25 +73,100 @@ body {
 }
 
 .tweet-content a {
-  color: inherit;
+  color: #2f6b4f;
   text-decoration: underline;
   text-underline-offset: 2px;
+  text-decoration-color: rgba(47, 107, 79, 0.3);
+  transition: text-decoration-color 150ms ease;
+}
+
+.tweet-content a:hover {
+  text-decoration-color: #2f6b4f;
 }
 
 .tweet-content blockquote {
   margin: 0 0 0.85em;
   padding: 0.2em 0 0.2em 0.9em;
-  border-left: 3px solid rgba(0, 0, 0, 0.14);
-  color: rgba(0, 0, 0, 0.65);
+  border-left: 3px solid #e8e5e0;
+  color: #6b7280;
 }
 
 .tweet-content code {
-  font-size: 0.95em;
-  background: rgba(0, 0, 0, 0.04);
+  font-size: 0.92em;
+  background: rgba(47, 59, 48, 0.06);
   padding: 0.15em 0.35em;
   border-radius: 4px;
 }
 
 .tweet-meta {
   line-height: 1.55;
+}
+
+/* ── Tweet 卡片 ── */
+.tweet-card {
+  border: 1px solid #e8e5e0;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+  transition: box-shadow 200ms ease;
+}
+
+.tweet-card:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+/* ── Tweet 图片 hover ── */
+.tweet-img {
+  transition: transform 200ms ease;
+  border-radius: 12px;
+}
+
+.tweet-img:hover {
+  transform: scale(1.02);
+}
+
+/* ── Book 卡片 hover ── */
+.book-card {
+  transition: transform 200ms ease, box-shadow 200ms ease;
+}
+
+.book-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+}
+
+/* ── 列表项通用样式 ── */
+.list-item-row {
+  transition: background-color 150ms ease;
+}
+
+.list-item-row:hover {
+  background-color: rgba(47, 59, 48, 0.02);
+}
+
+/* ── Answer 内容区复用 tweet 排版风格 ── */
+.answer-content {
+  line-height: 1.75;
+  letter-spacing: 0.1px;
+  color: #1a1a1a;
+}
+
+.answer-content a {
+  color: #2f6b4f;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  text-decoration-color: rgba(47, 107, 79, 0.3);
+}
+
+.answer-content blockquote {
+  margin: 0 0 0.85em;
+  padding: 0.2em 0 0.2em 0.9em;
+  border-left: 3px solid #e8e5e0;
+  color: #6b7280;
+}
+
+.answer-content p {
+  margin: 0 0 0.85em;
+}
+
+.answer-content p:last-child {
+  margin-bottom: 0;
 }

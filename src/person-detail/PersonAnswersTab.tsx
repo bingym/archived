@@ -38,34 +38,32 @@ export default function PersonAnswersTab({
       {answers.length === 0 ? (
         <Empty description="暂无问答" />
       ) : (
-        <Flex vertical>
+        <Flex vertical gap={20}>
           {answers.map((item) => (
-            <Flex
+            <Card
               key={item.id}
-              vertical
-              style={{ paddingBlock: token.paddingMD, borderBlockEnd: `1px solid ${token.colorSplit}` }}
+              styles={{ body: { padding: "24px 28px" } }}
+              style={{ borderRadius: 12, border: "1px solid #e8e5e0", boxShadow: "0 1px 2px rgba(0,0,0,0.03)" }}
             >
-              <Card size="small" styles={{ body: { padding: token.paddingLG } }}>
-                <Flex justify="space-between" align="flex-start" gap={token.marginSM} wrap="wrap">
-                  <Text type="secondary" style={{ fontSize: token.fontSizeSM }}>
-                    {formatDatetime(item.datetime)}
-                  </Text>
-                  {authed && (
-                    <Flex gap={token.marginXXS}>
-                      <Button type="text" size="small" icon={<EditOutlined />} onClick={() => onEdit(item)} />
-                      <Button type="text" size="small" danger icon={<DeleteOutlined />} onClick={() => onDelete(item)} />
-                    </Flex>
-                  )}
-                </Flex>
-                <Title level={5} style={{ marginTop: token.marginSM, marginBottom: token.marginXS }}>
-                  Q: {item.question}
-                </Title>
-                <div
-                  style={{ fontSize: token.fontSize, lineHeight: token.lineHeight }}
-                  dangerouslySetInnerHTML={{ __html: item.content ?? "" }}
-                />
-              </Card>
-            </Flex>
+              <Flex justify="space-between" align="flex-start" gap={token.marginSM} wrap="wrap">
+                <Text style={{ fontSize: 13, color: "#9ca3af", letterSpacing: "0.2px" }}>
+                  {formatDatetime(item.datetime)}
+                </Text>
+                {authed && (
+                  <Flex gap={2}>
+                    <Button type="text" size="small" icon={<EditOutlined />} onClick={() => onEdit(item)} />
+                    <Button type="text" size="small" danger icon={<DeleteOutlined />} onClick={() => onDelete(item)} />
+                  </Flex>
+                )}
+              </Flex>
+              <Title level={5} style={{ marginTop: 12, marginBottom: 8, fontSize: 16, fontWeight: 600 }}>
+                Q: {item.question}
+              </Title>
+              <div
+                className="answer-content"
+                dangerouslySetInnerHTML={{ __html: item.content ?? "" }}
+              />
+            </Card>
           ))}
         </Flex>
       )}

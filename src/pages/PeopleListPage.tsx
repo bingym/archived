@@ -38,8 +38,8 @@ export default function PeopleListPage() {
 
   return (
     <div style={{ maxWidth: 960, margin: "0 auto" }}>
-      <Flex justify="space-between" align="center" style={{ marginBottom: token.marginMD }}>
-        <Title level={3} style={{ margin: 0 }}>
+      <Flex justify="space-between" align="center" style={{ marginBottom: 24 }}>
+        <Title level={3} style={{ margin: 0, fontWeight: 600, letterSpacing: "0.2px" }}>
           People
         </Title>
         {authed && (
@@ -50,18 +50,19 @@ export default function PeopleListPage() {
       </Flex>
 
       {listLoading ? (
-        <Flex vertical justify="center" align="center" gap="small" style={{ minHeight: 160, padding: token.paddingLG }}>
+        <Flex vertical justify="center" align="center" gap="small" style={{ minHeight: 200, padding: token.paddingLG }}>
           <Spin />
           <Text type="secondary">Loading...</Text>
         </Flex>
       ) : people.length === 0 ? (
         <Empty style={{ padding: token.paddingLG }} description="No data" image={Empty.PRESENTED_IMAGE_SIMPLE} />
       ) : (
-        <Row gutter={[token.marginSM, token.marginSM]}>
+        <Row gutter={[20, 20]}>
           {people.map((person) => (
-            <Col key={person.id} xs={12} sm={8} md={6} lg={6}>
+            <Col key={person.id} xs={12} sm={8} md={8} lg={8}>
               <Link
                 to={`/people/${person.id}/info`}
+                className="person-card-link"
                 style={{
                   display: "block",
                   height: "100%",
@@ -72,7 +73,7 @@ export default function PeopleListPage() {
                 <Card
                   styles={{
                     body: {
-                      padding: token.paddingSM,
+                      padding: "24px 16px 20px",
                       display: "flex",
                       flexDirection: "column",
                       alignItems: "center",
@@ -82,10 +83,10 @@ export default function PeopleListPage() {
                   }}
                   style={{
                     height: "100%",
-                    borderRadius: token.borderRadius,
-                    borderColor: token.colorBorderSecondary,
-                    boxShadow: "none",
-                    opacity: person.visible === false ? 0.6 : 1,
+                    borderRadius: 12,
+                    border: "1px solid #e8e5e0",
+                    boxShadow: "0 1px 3px rgba(0, 0, 0, 0.04)",
+                    opacity: person.visible === false ? 0.55 : 1,
                   }}
                 >
                   {person.visible === false && (
@@ -94,8 +95,8 @@ export default function PeopleListPage() {
                       icon={<EyeInvisibleOutlined />}
                       style={{
                         position: "absolute",
-                        top: token.marginXXS,
-                        right: token.marginXXS,
+                        top: 8,
+                        right: 8,
                         margin: 0,
                         fontSize: token.fontSizeSM,
                       }}
@@ -107,26 +108,27 @@ export default function PeopleListPage() {
                     <Avatar
                       src={resolveImg(person.avatar)}
                       alt={person.name}
-                      size={48}
-                      shape="square"
-                      style={{ borderRadius: token.borderRadiusSM, flexShrink: 0 }}
+                      size={76}
+                      shape="circle"
+                      style={{ flexShrink: 0, border: "2px solid #f0eeeb" }}
                     />
                   ) : (
                     <Avatar
-                      size={48}
-                      shape="square"
+                      size={76}
+                      shape="circle"
                       icon={<UserOutlined />}
                       style={{
-                        borderRadius: token.borderRadiusSM,
                         flexShrink: 0,
-                        background: token.colorFillAlter,
+                        background: "#f0eeeb",
+                        color: "#9ca3af",
+                        fontSize: 28,
                       }}
                     />
                   )}
                   <Title
                     level={5}
                     ellipsis={{ tooltip: person.name }}
-                    style={{ margin: `${token.marginXS}px 0 0`, fontSize: token.fontSize, lineHeight: 1.3, width: "100%" }}
+                    style={{ margin: "12px 0 0", fontSize: 15, lineHeight: 1.4, width: "100%", fontWeight: 600 }}
                   >
                     {person.name}
                   </Title>
@@ -134,14 +136,15 @@ export default function PeopleListPage() {
                     type="secondary"
                     ellipsis={{ rows: 2, tooltip: person.description || undefined }}
                     style={{
-                      marginTop: 2,
+                      marginTop: 4,
                       marginBottom: 0,
-                      fontSize: token.fontSizeSM,
-                      lineHeight: 1.4,
+                      fontSize: 13,
+                      lineHeight: 1.5,
                       width: "100%",
+                      color: "#6b7280",
                     }}
                   >
-                    {person.description?.trim() ? person.description : "No description"}
+                    {person.description?.trim() ? person.description : "—"}
                   </Paragraph>
                 </Card>
               </Link>

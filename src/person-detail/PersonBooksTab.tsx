@@ -1,4 +1,4 @@
-import { Button, Card, Col, Image, Row, Typography, theme } from "antd";
+import { Button, Card, Col, Image, Row, Typography } from "antd";
 import { DeleteOutlined, EditOutlined } from "@ant-design/icons";
 import { resolveImg } from "../lib/img";
 import type { ItemPageSize } from "./constants";
@@ -32,23 +32,24 @@ export default function PersonBooksTab({
   onEdit,
   onDelete,
 }: Props) {
-  const { token } = theme.useToken();
   return (
     <div>
-      <Row gutter={[token.marginLG, token.marginLG]}>
+      <Row gutter={[20, 20]}>
         {books.map((item) => (
           <Col xs={24} sm={12} md={8} lg={6} key={item.id}>
             <Card
               hoverable
-              styles={{ body: { padding: token.paddingMD } }}
+              className="book-card"
+              styles={{ body: { padding: "16px" } }}
+              style={{ borderRadius: 12, border: "1px solid #e8e5e0", boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}
               cover={
                 item.cover ? (
-                  <div style={{ padding: token.paddingSM, paddingBottom: 0 }}>
+                  <div style={{ padding: "12px 12px 0" }}>
                     <Image
                       alt={item.title}
                       src={resolveImg(item.cover)}
                       width="100%"
-                      style={{ height: 160, objectFit: "cover" }}
+                      style={{ height: 180, objectFit: "cover", borderRadius: 8 }}
                       preview={false}
                     />
                   </div>
@@ -66,11 +67,11 @@ export default function PersonBooksTab({
               <Card.Meta
                 title={
                   item.url ? (
-                    <Link href={item.url} target="_blank" rel="noopener noreferrer" ellipsis>
+                    <Link href={item.url} target="_blank" rel="noopener noreferrer" ellipsis style={{ fontSize: 14 }}>
                       {item.title}
                     </Link>
                   ) : (
-                    <Text strong ellipsis>
+                    <Text strong ellipsis style={{ fontSize: 14 }}>
                       {item.title}
                     </Text>
                   )

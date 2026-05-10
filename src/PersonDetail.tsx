@@ -298,16 +298,15 @@ export default function PersonDetail() {
           <span>
             {t.label}
             {t.count > 0 && (
-              <Text type="secondary" style={{ marginLeft: 4, fontSize: token.fontSizeSM }}>
-                {" "}
-                ({t.count})
+              <Text style={{ marginLeft: 4, fontSize: 12, color: "#9ca3af" }}>
+                {t.count}
               </Text>
             )}
           </span>
         ),
         children: <span />,
       })),
-    [dynamicTabList, token.fontSizeSM]
+    [dynamicTabList]
   );
 
   const goTab = useCallback(
@@ -481,10 +480,11 @@ export default function PersonDetail() {
       />
       <Tabs
         className="person-detail-tabs-nav-only"
-        style={{ marginBottom: token.marginLG }}
+        style={{ marginBottom: 28 }}
         activeKey={tab}
         onChange={(k) => goTab(k as TabKey)}
         items={tabItemsConfig}
+        size="large"
       />
       {authed && itemKindForTab && (
         <Flex style={{ marginBottom: token.marginMD }}>

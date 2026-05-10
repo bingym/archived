@@ -42,22 +42,24 @@ export default function PersonVideosTab({
           {videos.map((item) => (
             <Flex
               key={item.id}
+              className="list-item-row"
               align="center"
               justify="space-between"
               gap={token.marginSM}
               style={{
-                padding: `${token.paddingSM}px 0`,
-                borderBottom: `1px solid ${token.colorSplit}`,
+                padding: "12px 8px",
+                borderBottom: "1px solid #e8e5e0",
+                borderRadius: 4,
               }}
             >
               <div style={{ minWidth: 0, flex: 1 }}>
                 {item.url ? (
-                  <Link href={item.url} target="_blank" rel="noopener noreferrer">
+                  <Link href={item.url} target="_blank" rel="noopener noreferrer" style={{ fontSize: 14 }}>
                     <LinkOutlined style={{ marginRight: 6 }} />
                     {item.title}
                   </Link>
                 ) : (
-                  <Text strong>{item.title}</Text>
+                  <Text strong style={{ fontSize: 14 }}>{item.title}</Text>
                 )}
               </div>
               {authed ? (

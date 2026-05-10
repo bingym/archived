@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
-import { Avatar, Breadcrumb, Button, Divider, Flex, Tag, Typography, theme } from "antd";
+import { Avatar, Button, Flex, Tag, Typography, theme } from "antd";
 import {
+  ArrowLeftOutlined,
   CloudSyncOutlined,
   DeleteOutlined,
   EditOutlined,
@@ -31,29 +32,46 @@ export default function PersonDetailHeader({
 }: Props) {
   const { token } = theme.useToken();
   return (
-    <div style={{ marginBottom: token.marginLG }}>
-      <Breadcrumb
-        items={[
-          {
-            title: (
-              <Link to="/people" style={{ color: "inherit" }}>
-                人物列表
-              </Link>
-            ),
-          },
-          { title: <Text strong>{person.name}</Text> },
-        ]}
-      />
-      <Divider style={{ margin: `${token.marginMD}px 0` }} />
-      <Flex align="center" gap={token.marginMD} wrap="wrap">
+    <div style={{ marginBottom: 32 }}>
+      <Link
+        to="/people"
+        style={{
+          display: "inline-flex",
+          alignItems: "center",
+          gap: 6,
+          color: "#6b7280",
+          textDecoration: "none",
+          fontSize: 13,
+          marginBottom: 20,
+          transition: "color 150ms",
+        }}
+        onMouseEnter={(e) => { e.currentTarget.style.color = "#2f3b30"; }}
+        onMouseLeave={(e) => { e.currentTarget.style.color = "#6b7280"; }}
+      >
+        <ArrowLeftOutlined style={{ fontSize: 12 }} />
+        返回列表
+      </Link>
+
+      <Flex align="center" gap={20} wrap="wrap">
         {person.avatar ? (
-          <Avatar src={resolveImg(person.avatar)} alt={person.name} size={96} shape="square" style={{ borderRadius: token.borderRadiusLG }} />
+          <Avatar
+            src={resolveImg(person.avatar)}
+            alt={person.name}
+            size={120}
+            shape="square"
+            style={{ borderRadius: 16, border: "2px solid #f0eeeb", flexShrink: 0 }}
+          />
         ) : (
-          <Avatar size={96} shape="square" icon={<UserOutlined />} style={{ borderRadius: token.borderRadiusLG, background: token.colorFillAlter }} />
+          <Avatar
+            size={120}
+            shape="square"
+            icon={<UserOutlined />}
+            style={{ borderRadius: 16, background: "#f0eeeb", color: "#9ca3af", fontSize: 40, flexShrink: 0 }}
+          />
         )}
-        <Flex vertical gap={token.marginXXS} style={{ flex: 1, minWidth: 200 }}>
+        <Flex vertical gap={4} style={{ flex: 1, minWidth: 200 }}>
           <Flex align="center" gap={token.marginXS} wrap="wrap">
-            <Title level={2} style={{ margin: 0 }} ellipsis={{ rows: 2, tooltip: person.name }}>
+            <Title level={1} style={{ margin: 0, fontSize: 28, fontWeight: 700, letterSpacing: "0.2px" }} ellipsis={{ rows: 2, tooltip: person.name }}>
               {person.name}
             </Title>
             {authed && person.visible === false && (
@@ -62,9 +80,14 @@ export default function PersonDetailHeader({
               </Tag>
             )}
           </Flex>
+          {person.description && (
+            <Text type="secondary" style={{ fontSize: 14, lineHeight: 1.6, marginTop: 4 }}>
+              {person.description}
+            </Text>
+          )}
         </Flex>
         {authed && (
-          <Flex gap={token.marginXS} wrap="wrap">
+          <Flex gap={token.marginXS} wrap="wrap" style={{ alignSelf: "flex-start" }}>
             <Button type="default" icon={<EditOutlined />} onClick={onEditProfile} />
             {onRebuildCounts && (
               <Button

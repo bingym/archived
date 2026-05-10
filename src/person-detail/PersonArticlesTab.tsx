@@ -50,19 +50,21 @@ export default function PersonArticlesTab({
             return (
               <Flex
                 key={item.id}
+                className="list-item-row"
                 align="center"
                 justify="space-between"
                 gap={token.marginSM}
                 style={{
-                  padding: `${token.paddingSM}px 0`,
-                  borderBottom: `1px solid ${token.colorSplit}`,
+                  padding: "12px 8px",
+                  borderBottom: "1px solid #e8e5e0",
+                  borderRadius: 4,
                 }}
               >
                 <div style={{ minWidth: 0, flex: 1 }}>
                   <Button
                     type="link"
                     onClick={() => setModalContent(item.content ?? "")}
-                    style={{ padding: 0, height: "auto", fontWeight: token.fontWeightStrong }}
+                    style={{ padding: 0, height: "auto", fontWeight: 500, fontSize: 14 }}
                   >
                     {displayTitle || "(Untitled)"}
                   </Button>

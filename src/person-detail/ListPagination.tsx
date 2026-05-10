@@ -1,4 +1,4 @@
-import { Button, Flex, Select, theme } from "antd";
+import { Button, Flex, Select } from "antd";
 import { LeftOutlined, RightOutlined } from "@ant-design/icons";
 import { ITEM_PAGE_SIZE_OPTIONS, normalizeItemPageSize, type ItemPageSize } from "./constants";
 
@@ -19,7 +19,6 @@ export default function ListPagination({
   pageSize,
   onPageSizeChange,
 }: ListPaginationProps) {
-  const { token } = theme.useToken();
 
   const hasPrev = prevCursor !== null;
   const hasNext = nextCursor !== null;
@@ -28,7 +27,7 @@ export default function ListPagination({
   if (!showBar) return null;
 
   return (
-    <Flex justify="center" align="center" gap={token.marginSM} style={{ marginTop: token.marginLG, marginBottom: token.marginMD }}>
+    <Flex justify="center" align="center" gap={12} style={{ marginTop: 32, marginBottom: 16 }}>
       <Button
         icon={<LeftOutlined />}
         disabled={!hasPrev}
@@ -48,7 +47,7 @@ export default function ListPagination({
           value={pageSize}
           onChange={(v) => onPageSizeChange(normalizeItemPageSize(v))}
           options={ITEM_PAGE_SIZE_OPTIONS.map((n) => ({ label: `${n} 条/页`, value: n }))}
-          style={{ marginLeft: token.marginSM }}
+          style={{ marginLeft: 8 }}
           size="middle"
         />
       )}

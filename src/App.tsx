@@ -2,7 +2,6 @@ import { lazy, Suspense } from "react";
 import "./App.css";
 import { Link, Navigate, Route, Routes, useParams } from "react-router-dom";
 import { Layout, Spin, theme, Typography } from "antd";
-import { UnorderedListOutlined } from "@ant-design/icons";
 import LoginButton from "./components/LoginButton";
 import { useStorageSync } from "./auth";
 
@@ -39,6 +38,7 @@ function TopBar() {
         paddingInline: token.paddingLG,
         background: token.colorBgContainer,
         borderBottom: `1px solid ${token.colorSplit}`,
+        boxShadow: "0 1px 3px rgba(0, 0, 0, 0.04)",
         position: "sticky",
         top: 0,
         zIndex: 100,
@@ -46,9 +46,8 @@ function TopBar() {
         lineHeight: "56px",
       }}
     >
-      <Link to="/people" style={{ display: "flex", alignItems: "center", gap: 8, textDecoration: "none", color: "inherit" }}>
-        <UnorderedListOutlined style={{ fontSize: 18, color: token.colorPrimary }} />
-        <Text strong style={{ fontSize: 16 }}>
+      <Link to="/people" style={{ display: "flex", alignItems: "center", gap: 10, textDecoration: "none", color: "inherit" }}>
+        <Text strong style={{ fontSize: 17, letterSpacing: "0.5px", color: token.colorPrimary }}>
           Archived
         </Text>
       </Link>
