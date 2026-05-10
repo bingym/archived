@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, Navigate, useNavigate, useParams, useSearchParams } from "react-router-dom";
-import { Button, Flex, Modal, Result, Spin, Tabs, Typography, theme } from "antd";
+import { Button, Flex, Modal, Result, Spin, Typography } from "antd";
 import { PlusOutlined } from "@ant-design/icons";
 import { apiFetch, useIsAuthed } from "./auth";
 import ItemEditor, { type ItemKind } from "./components/ItemEditor";
@@ -14,7 +14,7 @@ import {
   parseTweetsStarredFilter,
   type TweetsStarredFilter,
 } from "./person-detail/personDetailUrl";
-import PersonDetailHeader from "./person-detail/PersonDetailHeader";
+import PersonDetailSidebar from "./person-detail/PersonDetailHeader";
 import PersonInfoTab from "./person-detail/PersonInfoTab";
 import PersonBooksTab from "./person-detail/PersonBooksTab";
 import PersonArticlesTab from "./person-detail/PersonArticlesTab";
@@ -61,7 +61,6 @@ function savedRecordToTweetItem(saved: Record<string, unknown>): TweetItem {
 }
 
 export default function PersonDetail() {
-  const { token } = theme.useToken();
   const navigate = useNavigate();
   const { id, tab: tabSegment } = useParams<{ id: string; tab: string }>();
   const [searchParams] = useSearchParams();
@@ -290,25 +289,6 @@ export default function PersonDetail() {
 
   const allowedTabKeys = useMemo(() => new Set(dynamicTabList.map((t) => t.key)), [dynamicTabList]);
 
-  const tabItemsConfig = useMemo(
-    () =>
-      dynamicTabList.map((t) => ({
-        key: t.key,
-        label: (
-          <span>
-            {t.label}
-            {t.count > 0 && (
-              <Text style={{ marginLeft: 4, fontSize: 12, color: "#9ca3af" }}>
-                {t.count}
-              </Text>
-            )}
-          </span>
-        ),
-        children: <span />,
-      })),
-    [dynamicTabList]
-  );
-
   const goTab = useCallback(
     (next: TabKey) => {
       if (!id) return;
@@ -469,36 +449,32 @@ export default function PersonDetail() {
   const paginationProps = { nextCursor, prevCursor, onNext: goNext, onPrev: goPrev, pageSize, onPageSizeChange: goPageSize };
 
   return (
-    <div style={{ maxWidth: 1200, margin: "0 auto" }}>
-      <PersonDetailHeader
+    <div className="detail-container">
+      <PersonDetailSidebar
         person={person}
         authed={authed}
+        activeTab={tab}
+        navItems={dynamicTabList}
+        onTabChange={goTab}
         onEditProfile={() => setPersonEditorOpen(true)}
         onRebuildCounts={authed ? () => void onRebuildCounts() : undefined}
         rebuildCountsLoading={rebuildCountsLoading}
         onDeletePerson={authed ? () => void onDeletePerson() : undefined}
       />
-      <Tabs
-        className="person-detail-tabs-nav-only"
-        style={{ marginBottom: 28 }}
-        activeKey={tab}
-        onChange={(k) => goTab(k as TabKey)}
-        items={tabItemsConfig}
-        size="large"
-      />
-      {authed && itemKindForTab && (
-        <Flex style={{ marginBottom: token.marginMD }}>
-          <Button type="primary" icon={<PlusOutlined />} onClick={() => setEditor({ kind: itemKindForTab, initial: null })}>
-            New Item
-          </Button>
-        </Flex>
-      )}
 
-      <div>
+      <main className="detail-content">
+        {authed && itemKindForTab && (
+          <Flex style={{ marginBottom: 16 }}>
+            <Button type="primary" icon={<PlusOutlined />} onClick={() => setEditor({ kind: itemKindForTab, initial: null })}>
+              New Item
+            </Button>
+          </Flex>
+        )}
+
         {tab === "info" && <PersonInfoTab person={person} />}
 
         {showTabLoading && (
-          <Flex align="center" gap="small" style={{ marginBottom: token.marginMD, minHeight: 120 }}>
+          <Flex align="center" gap="small" style={{ minHeight: 120 }}>
             <Spin />
             <Text type="secondary">Loading...</Text>
           </Flex>
@@ -572,7 +548,7 @@ export default function PersonDetail() {
             onDelete={(item) => void onDeleteItem("answers", item.id)}
           />
         )}
-      </div>
+      </main>
 
       {editor && id && (
         <ItemEditor

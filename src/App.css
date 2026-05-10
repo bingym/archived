@@ -14,12 +14,97 @@ body {
   min-height: 100%;
 }
 
-/* Tabs 仅作导航，正文在下方单独渲染 */
-.person-detail-tabs-nav-only .ant-tabs-content-holder {
+/* ═══════════════════════════════════════════
+   详情页：左右两栏布局
+   ═══════════════════════════════════════════ */
+
+.detail-container {
+  display: flex;
+  gap: 0;
+  max-width: 1280px;
+  margin: 0 auto;
+}
+
+.detail-sidebar {
+  width: 220px;
+  flex-shrink: 0;
+  padding: 0 24px 32px 0;
+  border-right: 1px solid #e8e5e0;
+  position: sticky;
+  top: 72px;
+  align-self: flex-start;
+  max-height: calc(100vh - 88px);
+  overflow-y: auto;
+}
+
+.detail-content {
+  flex: 1;
+  min-width: 0;
+  padding-left: 32px;
+}
+
+/* ── 侧边栏返回链接 ── */
+.sidebar-back-link {
+  transition: color 150ms ease;
+}
+
+.sidebar-back-link:hover {
+  color: #2f3b30 !important;
+}
+
+/* ── 侧边栏垂直导航（桌面端） ── */
+.sidebar-nav-desktop {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* 移动端折叠导航：桌面端隐藏 */
+.sidebar-nav-mobile {
   display: none;
 }
 
-/* ── 人物卡片 hover 动效 ── */
+.sidebar-nav-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 8px 12px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  cursor: pointer;
+  font-size: 14px;
+  color: #6b7280;
+  text-align: left;
+  transition: background-color 150ms ease, color 150ms ease;
+}
+
+.sidebar-nav-item:hover {
+  background-color: rgba(47, 59, 48, 0.04);
+  color: #1a1a1a;
+}
+
+.sidebar-nav-item-active {
+  background-color: rgba(47, 59, 48, 0.08);
+  color: #1a1a1a;
+  font-weight: 600;
+}
+
+.sidebar-nav-item-label {
+  flex: 1;
+}
+
+.sidebar-nav-item-count {
+  font-size: 12px;
+  color: #9ca3af;
+  font-weight: 400;
+}
+
+/* ═══════════════════════════════════════════
+   人物卡片 hover 动效
+   ═══════════════════════════════════════════ */
+
 .person-card-link .ant-card {
   transition: transform 200ms ease, box-shadow 200ms ease;
 }
@@ -29,16 +114,12 @@ body {
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
 }
 
-/* ── Tweets：更适合阅读的排版与聚焦宽度 ── */
-.tweets-reading-container {
-  max-width: 860px;
-  margin: 0 auto;
-}
+/* ═══════════════════════════════════════════
+   Tweets：阅读排版
+   ═══════════════════════════════════════════ */
 
-@media (min-width: 1280px) {
-  .tweets-reading-container {
-    max-width: 820px;
-  }
+.tweets-reading-container {
+  max-width: 960px;
 }
 
 .tweet-content {
@@ -123,7 +204,10 @@ body {
   transform: scale(1.02);
 }
 
-/* ── Book 卡片 hover ── */
+/* ═══════════════════════════════════════════
+   Book 卡片 hover
+   ═══════════════════════════════════════════ */
+
 .book-card {
   transition: transform 200ms ease, box-shadow 200ms ease;
 }
@@ -133,7 +217,10 @@ body {
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
 }
 
-/* ── 列表项通用样式 ── */
+/* ═══════════════════════════════════════════
+   列表项通用样式
+   ═══════════════════════════════════════════ */
+
 .list-item-row {
   transition: background-color 150ms ease;
 }
@@ -142,7 +229,10 @@ body {
   background-color: rgba(47, 59, 48, 0.02);
 }
 
-/* ── Answer 内容区复用 tweet 排版风格 ── */
+/* ═══════════════════════════════════════════
+   Answer 内容区排版
+   ═══════════════════════════════════════════ */
+
 .answer-content {
   line-height: 1.75;
   letter-spacing: 0.1px;
@@ -169,4 +259,139 @@ body {
 
 .answer-content p:last-child {
   margin-bottom: 0;
+}
+
+/* ═══════════════════════════════════════════
+   响应式：移动端 (<768px)
+   ═══════════════════════════════════════════ */
+
+@media (max-width: 767px) {
+  .detail-container {
+    flex-direction: column;
+  }
+
+  .detail-sidebar {
+    width: 100%;
+    position: static;
+    max-height: none;
+    overflow: visible;
+    border-right: none;
+    border-bottom: 1px solid #e8e5e0;
+    padding: 0 0 16px 0;
+    margin-bottom: 20px;
+  }
+
+  .detail-content {
+    padding-left: 0;
+  }
+
+  /* 桌面垂直导航隐藏 */
+  .sidebar-nav-desktop {
+    display: none;
+  }
+
+  /* 移动端折叠导航显示 */
+  .sidebar-nav-mobile {
+    display: block;
+    position: relative;
+  }
+
+  .tweets-reading-container {
+    max-width: 100%;
+  }
+
+  /* 移动端减小 tweet 卡片内边距 */
+  .tweet-card .ant-card-body {
+    padding: 16px 14px !important;
+  }
+
+  /* 移动端减小全局 Content 内边距 */
+  .ant-layout-content {
+    padding: 12px !important;
+  }
+}
+
+/* ═══════════════════════════════════════════
+   移动端折叠导航组件样式
+   ═══════════════════════════════════════════ */
+
+.sidebar-nav-mobile-trigger {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid #e8e5e0;
+  border-radius: 10px;
+  background: #ffffff;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1a1a1a;
+  text-align: left;
+  transition: border-color 150ms ease;
+}
+
+.sidebar-nav-mobile-trigger:hover {
+  border-color: #c5c2bd;
+}
+
+.sidebar-nav-mobile-trigger-count {
+  font-size: 12px;
+  color: #9ca3af;
+  font-weight: 400;
+}
+
+.sidebar-nav-mobile-arrow {
+  margin-left: auto;
+  font-size: 11px;
+  color: #9ca3af;
+  transition: transform 200ms ease;
+}
+
+.sidebar-nav-mobile-arrow-open {
+  transform: rotate(180deg);
+}
+
+.sidebar-nav-mobile-panel {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 50;
+  background: #ffffff;
+  border: 1px solid #e8e5e0;
+  border-radius: 10px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.sidebar-nav-mobile-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 10px 12px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  cursor: pointer;
+  font-size: 14px;
+  color: #6b7280;
+  text-align: left;
+  transition: background-color 150ms ease, color 150ms ease;
+}
+
+.sidebar-nav-mobile-item:hover {
+  background-color: rgba(47, 59, 48, 0.04);
+  color: #1a1a1a;
+}
+
+.sidebar-nav-mobile-item-active {
+  background-color: rgba(47, 59, 48, 0.08);
+  color: #1a1a1a;
+  font-weight: 600;
 }
