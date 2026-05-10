@@ -2,11 +2,15 @@ import { apiFetch, getToken } from "../auth";
 
 export type UploadPrefix = "avatars" | "covers" | "tweets";
 
+const R2_CDN_BASE = import.meta.env.PROD
+  ? "https://archived.cdn.1994.link"
+  : "/r2";
+
 /** Resolve a stored image reference (R2 key or external URL) to a renderable src. */
 export function resolveImg(value: string | null | undefined): string {
   if (!value) return "";
   if (/^https?:\/\//i.test(value)) return value;
-  return `/r2/${value.replace(/^\/+/, "")}`;
+  return `${R2_CDN_BASE}/${value.replace(/^\/+/, "")}`;
 }
 
 export function isR2Key(value: string | null | undefined): value is string {

@@ -20,7 +20,6 @@ Worker 在 `worker/index.ts` 挂载如下路由：
 - `/api/v1/people/*` → `worker/routes/people.ts`
 - `/api/v1/*` → `worker/routes/items.ts`（通用 items CRUD）
 - `/api/v1/uploads/*` → `worker/routes/r2.ts`（上传/删除）
-- `/r2/*` → `worker/routes/r2.ts`（公开读取图片）
 
 ## 数据模型（D1）
 
@@ -31,7 +30,7 @@ Worker 在 `worker/index.ts` 挂载如下路由：
 
 ## 鉴权模型
 
-- 只有一种“管理员 token”鉴权：`Authorization: Bearer <ADMIN_TOKEN>`
+- 只有一种"管理员 token"鉴权：`Authorization: Bearer <ADMIN_TOKEN>`
 - Worker 使用 `worker/middleware/auth.ts` 的 `requireAdmin` 中间件保护写操作
 - 前端将 token 存在 `localStorage`（key：`archived.adminToken`），请求由 `src/auth.ts` 自动注入 header
 
@@ -57,9 +56,9 @@ tweets 列表在 `worker/routes/people.ts` 中通过 KV 索引分页读取（见
 ## 图片处理与清理策略
 
 - 数据库字段可存外链 URL 或 R2 object key
-- Worker 用“是否是 `http(s)://`”判断是否为 R2 key（`worker/lib/r2.ts`）
+- 前端 `src/lib/img.ts` 的 `resolveImg()` 将 R2 key 解析为 `https://archived.cdn.1994.link/<key>` 直连 CDN（不经过 Worker 中转）
+- Worker 用"是否是 `http(s)://`"判断是否为 R2 key（`worker/lib/r2.ts`）
 - 更新/删除条目时会清理旧 R2 key：
   - people：`avatar` 变更会删除旧头像（若为 R2 key）
   - books：`cover` 变更会删除旧封面（若为 R2 key）
   - tweets：删除时会遍历 `imgs` JSON 数组并删除其中的 R2 keys
-
